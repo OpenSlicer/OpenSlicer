@@ -3,7 +3,7 @@ import './index.css'
 
 let THREE = require('./vendor/three')
 let OrbitControls = require('./vendor/OrbitControls')
-
+let STLLoader = require('./vendor/STLLoader')
 
 let canvas = document.getElementById('canvas')
 
@@ -15,6 +15,9 @@ let camera, scene, renderer, controls
 let geometry, material, mesh
 
 
+let obj // main 3d model
+
+
 init()
 animate()
 
@@ -24,6 +27,34 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight)
 }, false)
 
+
+document.addEventListener('dragover', ev => {
+    ev.preventDefault()
+})
+
+document.addEventListener('drop', ev => {
+    ev.stopPropagation()
+    ev.preventDefault()
+
+    var loader = new STLLoader()
+
+    if (ev.dataTransfer.files.length === 0) {
+        console.log('No files')
+        return
+    }
+    let file = ev.dataTransfer.files[0]
+    let reader = new FileReader()
+    reader.addEventListener('load', ev => {
+        let buffer = ev.target.result
+        let geom = loader.parse(buffer)
+        scene.remove(obj)
+        obj = new THREE.Mesh(geom, material)
+        scene.add(obj)
+    }, false)
+    reader.readAsArrayBuffer(file)
+}, false)
+
+
 function resetCamera() {
     camera.position.set(1, 1, 1)
     camera.lookAt(0, 0, 0)
@@ -32,13 +63,7 @@ function resetCamera() {
 
 function init() {
     scene = new THREE.Scene()
-
-    geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2)
     material = new THREE.MeshNormalMaterial()
-
-    mesh = new THREE.Mesh(geometry, material)
-    scene.add(mesh)
-
     renderer = new THREE.WebGLRenderer({canvas: canvas, antialias: true})
     renderer.setSize(window.innerWidth, window.innerHeight)
     document.body.appendChild(renderer.domElement)
@@ -55,10 +80,7 @@ function init() {
 function animate() {
 
     requestAnimationFrame(animate)
-
-
     controls.update()
-
     renderer.render(scene, camera)
 
 }
