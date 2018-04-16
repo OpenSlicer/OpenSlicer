@@ -11,9 +11,11 @@ let canvas = document.getElementById('canvas')
 
 // THREEjs globals
 let camera, scene, renderer, controls
+let camLight = new THREE.DirectionalLight(0xffffff, 0.75)
+
 
 // Single object
-let geometry, material, mesh
+let material
 
 
 init()
@@ -36,7 +38,7 @@ function loadSTL(ev) {
     ev.stopPropagation()
     ev.preventDefault()
 
-    var loader = new STLLoader()
+    let loader = new STLLoader()
 
     if (ev.dataTransfer.files.length === 0) {
         return
@@ -85,8 +87,6 @@ function onObjectLoaded(geom) {
 
 function boundingBox(bb) {
     bb = bb.clone()
-    bb.min.multiplyScalar(1.01)
-    bb.max.multiplyScalar(1.01)
     let d = bb.max.clone().sub(bb.min)
     let geom = new THREE.CubeGeometry(d.x, d.y, d.z)
     geom = new THREE.EdgesGeometry(geom)
@@ -105,10 +105,39 @@ function resetCamera(length) {
 }
 
 
+function showGround() {
+    scene.add(new THREE.GridHelper(500, 50))
+
+    let obj = new THREE.Mesh(
+        new THREE.PlaneGeometry(500, 500),
+        new THREE.MeshBasicMaterial({
+            color: 0x888888,
+            transparent: true,
+            opacity: 0.1,
+            side: THREE.DoubleSide,
+        }))
+    obj.rotateX(Math.PI / 2)
+    scene.add(obj)
+}
+
+
+function updateLights() {
+    let showLight = function showLight(x, y, z, i) {
+        let l = new THREE.DirectionalLight(0xffffff, i)
+        scene.add(l)
+        l.position.set(x, y, z)
+    }
+}
+
+
 function init() {
     scene = new THREE.Scene()
-    material = new THREE.MeshNormalMaterial()
-    renderer = new THREE.WebGLRenderer({canvas: canvas, antialias: true})
+    material = new THREE.MeshPhongMaterial()
+    renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+        alpha: true
+    })
     renderer.setSize(window.innerWidth, window.innerHeight)
     document.body.appendChild(renderer.domElement)
 
@@ -116,14 +145,22 @@ function init() {
     camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000)
     controls = new OrbitControls(camera)
 
+    scene.background = new THREE.Texture
+
     resetCamera(10)
-    scene.add(new THREE.AxesHelper(50))
+    updateLights()
+
+    scene.add(camLight)
+
+    scene.add(new THREE.AxesHelper(500))
+    showGround()
 }
 
 function animate() {
-
     requestAnimationFrame(animate)
     controls.update()
+    camLight.position.copy(camera.position)
+
     renderer.render(scene, camera)
 
 }
