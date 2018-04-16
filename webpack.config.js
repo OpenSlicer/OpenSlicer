@@ -1,15 +1,21 @@
-var webpack = require("webpack")
+const webpack = require('webpack')
+const path = require('path')
 
-
-var config = {
-    entry: "./src/main.js",
-    mode: 'development',
+module.exports = {
+    entry: './src/index.js',
     output: {
-        path: __dirname + "/build",
-        filename: "bundle.js",
-        publicPath: "/build/"
+        filename: 'bundle.js',
+        path: path.resolve(__dirname, 'dist')
+    },
+    module: {
+        rules: [
+            {
+                test: /\.css$/,
+                use: [
+                    'style-loader',
+                    'css-loader'
+                ]
+            }
+        ]
     }
 }
-
-
-module.exports = config

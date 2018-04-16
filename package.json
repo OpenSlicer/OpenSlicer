@@ -9,5 +9,9 @@
   "author": "",
   "dependencies": {
     "webpack": "^4.5.0"
+  },
+  "devDependencies": {
+    "css-loader": "^0.28.11",
+    "style-loader": "^0.20.3"
   }
 }
