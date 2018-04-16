@@ -65,11 +65,12 @@ function onObjectLoaded(geom) {
 
 
     let bb = new THREE.Box3().setFromObject(obj)
+    let radius = bb.max.clone().sub(bb.min).length() / 2
     let tmp = bb.max.clone().sub(bb.min)
     tmp.divideScalar(2)
     tmp.multiplyScalar(-1)
     tmp.sub(bb.min)
-    console.log(tmp)
+    //console.log(tmp)
     let length = tmp.length()
     tmp.normalize()
     obj.translateOnAxis(tmp, length)
@@ -77,6 +78,7 @@ function onObjectLoaded(geom) {
     //console.log(bb)
 
     drawBoundingBox(bb)
+    resetCamera(radius)
 }
 
 function drawBoundingBox(bb) {
@@ -95,8 +97,10 @@ function drawBoundingBox(bb) {
     scene.add(bbWireframe)
 }
 
-function resetCamera() {
-    camera.position.set(1, 1, 1)
+function resetCamera(length) {
+    let pos = new THREE.Vector3(1, 1, 1).setLength(length * 3)
+    console.log("camera pos: ", pos)
+    camera.position.copy(pos)
     camera.lookAt(0, 0, 0)
 }
 
@@ -110,11 +114,10 @@ function init() {
 
 
     camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000)
-
     controls = new OrbitControls(camera)
 
-
-    resetCamera()
+    resetCamera(10)
+    scene.add(new THREE.AxesHelper(50))
 }
 
 function animate() {
