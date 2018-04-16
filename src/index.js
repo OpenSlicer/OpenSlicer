@@ -39,7 +39,6 @@ function loadSTL(ev) {
     var loader = new STLLoader()
 
     if (ev.dataTransfer.files.length === 0) {
-        console.log('No files')
         return
     }
     let file = ev.dataTransfer.files[0]
@@ -75,7 +74,6 @@ function onObjectLoaded(geom) {
     tmp.normalize()
 
     let bbb = boundingBox(bb)
-    console.log("bbY:", bbY)
     group.add(bbb)
     obj.translateOnAxis(tmp, length)
 
@@ -102,7 +100,6 @@ function boundingBox(bb) {
 
 function resetCamera(length) {
     let pos = new THREE.Vector3(1, 1, 1).setLength(length * 3)
-    console.log("camera pos: ", pos)
     camera.position.copy(pos)
     camera.lookAt(0, 0, 0)
 }
