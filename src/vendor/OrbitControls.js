@@ -1,4 +1,4 @@
-let THREE = require('./three')
+let THREE = require('three')
 
 /**
  * @author qiao / https://github.com/qiao

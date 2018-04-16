@@ -1,7 +1,8 @@
 import './index.css'
 
 
-let THREE = require('./vendor/three')
+//let THREE = require('./vendor/three')
+let THREE = require('three')
 let OrbitControls = require('./vendor/OrbitControls')
 let STLLoader = require('./vendor/STLLoader')
 
@@ -16,6 +17,7 @@ let geometry, material, mesh
 
 
 let obj // main 3d model
+let bbWireframe
 
 
 init()
@@ -32,7 +34,9 @@ document.addEventListener('dragover', ev => {
     ev.preventDefault()
 })
 
-document.addEventListener('drop', ev => {
+document.addEventListener('drop', loadSTL, false)
+
+function loadSTL(ev) {
     ev.stopPropagation()
     ev.preventDefault()
 
@@ -47,13 +51,49 @@ document.addEventListener('drop', ev => {
     reader.addEventListener('load', ev => {
         let buffer = ev.target.result
         let geom = loader.parse(buffer)
-        scene.remove(obj)
-        obj = new THREE.Mesh(geom, material)
-        scene.add(obj)
+
+        onObjectLoaded(geom)
     }, false)
     reader.readAsArrayBuffer(file)
-}, false)
+}
 
+
+function onObjectLoaded(geom) {
+    scene.remove(obj)
+    obj = new THREE.Mesh(geom, material)
+    scene.add(obj)
+
+
+    let bb = new THREE.Box3().setFromObject(obj)
+    let tmp = bb.max.clone().sub(bb.min)
+    tmp.divideScalar(2)
+    tmp.multiplyScalar(-1)
+    tmp.sub(bb.min)
+    console.log(tmp)
+    let length = tmp.length()
+    tmp.normalize()
+    obj.translateOnAxis(tmp, length)
+
+    //console.log(bb)
+
+    drawBoundingBox(bb)
+}
+
+function drawBoundingBox(bb) {
+    bb = bb.clone()
+    bb.min.multiplyScalar(1.01)
+    bb.max.multiplyScalar(1.01)
+    scene.remove(bbWireframe)
+    let d = bb.max.clone().sub(bb.min)
+    let geom = new THREE.CubeGeometry(d.x, d.y, d.z)
+    geom = new THREE.EdgesGeometry(geom)
+    let mat = new THREE.LineBasicMaterial({
+        color: 0xff0000,
+        linewidth: 2,
+    })
+    bbWireframe = new THREE.LineSegments(geom, mat)
+    scene.add(bbWireframe)
+}
 
 function resetCamera() {
     camera.position.set(1, 1, 1)
