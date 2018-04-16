@@ -16,10 +16,6 @@ let camera, scene, renderer, controls
 let geometry, material, mesh
 
 
-let obj // main 3d model
-let bbWireframe
-
-
 init()
 animate()
 
@@ -59,9 +55,11 @@ function loadSTL(ev) {
 
 
 function onObjectLoaded(geom) {
-    scene.remove(obj)
-    obj = new THREE.Mesh(geom, material)
-    scene.add(obj)
+    let group = new THREE.Group()
+    scene.add(group)
+
+    let obj = new THREE.Mesh(geom, material)
+    group.add(obj)
 
 
     let bb = new THREE.Box3().setFromObject(obj)
@@ -70,22 +68,27 @@ function onObjectLoaded(geom) {
     tmp.divideScalar(2)
     tmp.multiplyScalar(-1)
     tmp.sub(bb.min)
-    //console.log(tmp)
+    let bbY = bb.getSize(new THREE.Vector3(0, 0, 0)).y / 2
+    tmp.add(new THREE.Vector3(0, bbY, 0))
+
     let length = tmp.length()
     tmp.normalize()
+
+    let bbb = boundingBox(bb)
+    console.log("bbY:", bbY)
+    group.add(bbb)
     obj.translateOnAxis(tmp, length)
 
-    //console.log(bb)
+    bbb.translateOnAxis(new THREE.Vector3(0, 1, 0), bbY)
 
-    drawBoundingBox(bb)
     resetCamera(radius)
+    return group
 }
 
-function drawBoundingBox(bb) {
+function boundingBox(bb) {
     bb = bb.clone()
     bb.min.multiplyScalar(1.01)
     bb.max.multiplyScalar(1.01)
-    scene.remove(bbWireframe)
     let d = bb.max.clone().sub(bb.min)
     let geom = new THREE.CubeGeometry(d.x, d.y, d.z)
     geom = new THREE.EdgesGeometry(geom)
@@ -93,8 +96,8 @@ function drawBoundingBox(bb) {
         color: 0xff0000,
         linewidth: 2,
     })
-    bbWireframe = new THREE.LineSegments(geom, mat)
-    scene.add(bbWireframe)
+    let bbWireframe = new THREE.LineSegments(geom, mat)
+    return bbWireframe
 }
 
 function resetCamera(length) {
