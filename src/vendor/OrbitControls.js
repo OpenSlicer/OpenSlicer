@@ -546,12 +546,14 @@ function OrbitControls(object, domElement) {
         switch (event.keyCode) {
 
             case scope.keys.UP:
-                pan(0, scope.keyPanSpeed)
+                panY(scope.keyPanSpeed)
+                //pan(0, scope.keyPanSpeed)
                 scope.update()
                 break
 
             case scope.keys.BOTTOM:
-                pan(0, -scope.keyPanSpeed)
+                panY(-scope.keyPanSpeed)
+                //pan(0, -scope.keyPanSpeed)
                 scope.update()
                 break
 

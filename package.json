@@ -8,6 +8,7 @@
   },
   "author": "",
   "dependencies": {
+    "dat.gui": "^0.7.1",
     "three": "^0.91.0",
     "webpack": "^4.5.0"
   },
