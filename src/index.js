@@ -10,8 +10,8 @@ let options = {
     layerHeight: 0.2,
     nozzleDiameter: 0.4,
     showLayerTriangles: false,
-    showLayerIntersection: true,
-    test: 5,
+    showLayerSegments: true,
+    axesHelper: true,
 }
 let numLayers = 0
 
@@ -32,8 +32,11 @@ function loadMenu() {
     controllers.showLayerTriangles = gui.add(options, 'showLayerTriangles').onChange(() => {
         slice()
     })
-    controllers.showLayerIntersection = gui.add(options, 'showLayerIntersection').onChange(() => {
+    controllers.showLayerSegments = gui.add(options, 'showLayerSegments').onChange(() => {
         slice()
+    })
+    controllers.axesHelper = gui.add(options, 'axesHelper').onChange((v) => {
+        axesHelper.visible = v
     })
 }
 
@@ -60,6 +63,7 @@ let sliceLines
 let mainGeom
 let timer
 let objectHeight
+let axesHelper
 
 init()
 animate()
@@ -134,15 +138,12 @@ function computeLayerTriangles(show) {
 
     layerTrianglesObject = new THREE.Mesh(g2, mat)
 
-    //layerTrianglesObject.geometry = g2
-    //layerTrianglesObject.material = mat
-    //layerTrianglesObject.material.needsUpdate = true
     if (show)
         scene.add(layerTrianglesObject)
 }
 
 
-function computeLayerIntersection(show) {
+function computeLayerSegments(show) {
     scene.remove(sliceLines)
 
     let geom = new THREE.Geometry()
@@ -157,7 +158,6 @@ function computeLayerIntersection(show) {
     let lineIntersects = (a, b) => (a > h && h > b) || (b > h && h > a)
 
     let out = []
-    // geom
     g.faces.forEach((f) => {
         let vs = [g.vertices[f.a], g.vertices[f.b], g.vertices[f.c]]
         let ls = [
@@ -178,10 +178,8 @@ function computeLayerIntersection(show) {
                 out.push(l)
             })
         } else { // face intersects plane
-            //console.log(vs, ls)
             let ils = []
             ls.forEach((l, i) => {
-                //console.log(l, lineIntersects(l.start.y, l.end.y))
                 if (lineIntersects(l.start.y, l.end.y))
                     ils.push(i)
             })
@@ -203,7 +201,6 @@ function computeLayerIntersection(show) {
 
     if (show) {
         out.forEach((l) => makeLine(l))
-        //console.log(sliceGroup)
 
         sliceLines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
             color: 0xff0000,
@@ -233,7 +230,6 @@ function onObjectLoaded(geom) {
         color: 0xffffff,
         transparent: true,
         opacity: 0.4,
-        //wireframe: true,
     })
     let obj = new THREE.Mesh(geom, mat)
     group.add(obj)
@@ -251,7 +247,6 @@ function onObjectLoaded(geom) {
     let bbb = boundingBox(bb)
     group.add(bbb)
     obj.geometry.applyMatrix(new THREE.Matrix4().makeTranslation(tmp.x, tmp.y, tmp.z))
-    //obj.translateOnAxis(tmp, length)
     bbb.translateOnAxis(new THREE.Vector3(0, 1, 0), bbY)
 
     resetCamera(radius)
@@ -269,7 +264,7 @@ function slice() {
     if (mainObj === undefined) return
 
     computeLayerTriangles(options.showLayerTriangles)
-    computeLayerIntersection(options.showLayerIntersection)
+    computeLayerSegments(options.showLayerSegments)
 }
 
 function boundingBox(bb) {
@@ -359,7 +354,8 @@ function init() {
 
     scene.add(camLight)
 
-    scene.add(new THREE.AxesHelper(500))
+    axesHelper = new THREE.AxesHelper(500)
+    scene.add(axesHelper)
     //showGround()
 }
 
