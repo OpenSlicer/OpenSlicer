@@ -1,6 +1,9 @@
 import './index.css'
 import dat from 'dat.gui'
 
+let THREE = require('three')
+let OrbitControls = require('./vendor/OrbitControls')
+let STLLoader = require('./vendor/STLLoader')
 let Timer = require('./timer')
 
 let gui = new dat.GUI()
@@ -11,28 +14,46 @@ let options = {
     nozzleDiameter: 0.4,
     showLayerTriangles: false,
     showLayerSegments: true,
+    showLayerLines: true,
     axesHelper: true,
 }
 let numLayers = 0
+let canvas = document.getElementById('canvas')
+let camera, scene, renderer, controls
+let camLight = new THREE.DirectionalLight(0xffffff, 0.75)
+let mainObj
+let mainGeom
+let timer
+let objectHeight
+
+
+let currentLayer = new THREE.Group()
+let axesHelper
+let contourLines
+let intersectionPlane
+let layerTrianglesObject
+let lines
+
+
 
 function loadMenu() {
     controllers.currentLayer = gui.add(options, 'currentLayer', 0, 10000).onChange(() => {
         slice()
-    }).listen()
+    })
     controllers.layerHeight = gui.add(options, 'layerHeight', 0.06, 0.5, 0.01).onChange(() => {
         computeObjectHeight()
-        // reslice everything
         slice()
     })
     controllers.nozzleDiameter = gui.add(options, 'nozzleDiameter', 0, 2, 0.1).onChange(() => {
-        // reslice everything
         slice()
     })
-
     controllers.showLayerTriangles = gui.add(options, 'showLayerTriangles').onChange(() => {
         slice()
     })
     controllers.showLayerSegments = gui.add(options, 'showLayerSegments').onChange(() => {
+        slice()
+    })
+    controllers.showLayerLines = gui.add(options, 'showLayerLines').onChange(() => {
         slice()
     })
     controllers.axesHelper = gui.add(options, 'axesHelper').onChange((v) => {
@@ -43,27 +64,6 @@ function loadMenu() {
 
 loadMenu()
 
-
-//let THREE = require('./vendor/three')
-let THREE = require('three')
-let OrbitControls = require('./vendor/OrbitControls')
-let STLLoader = require('./vendor/STLLoader')
-
-let canvas = document.getElementById('canvas')
-
-
-// THREEjs globals
-let camera, scene, renderer, controls
-let camLight = new THREE.DirectionalLight(0xffffff, 0.75)
-
-let intersectionPlane
-let layerTrianglesObject
-let mainObj
-let sliceLines
-let mainGeom
-let timer
-let objectHeight
-let axesHelper
 
 init()
 animate()
@@ -114,7 +114,6 @@ function computeLayerTriangles(show) {
 
     scene.remove(layerTrianglesObject)
 
-    //layerTrianglesObject = obj.clone()
     timer.tick("Clone")
     //let g = mainGeom
     //console.log("Total triangles:", g.faces.length)
@@ -144,22 +143,22 @@ function computeLayerTriangles(show) {
 
 
 function computeLayerSegments(show) {
-    scene.remove(sliceLines)
+    scene.remove(contourLines)
 
     let geom = new THREE.Geometry()
     let makeLine = (l) => {
         geom.vertices.push(l.start)
         geom.vertices.push(l.end)
     }
-    let g = layerTrianglesObject.geometry
+    let triangles = layerTrianglesObject.geometry
     let h = options.currentLayer * options.layerHeight
 
     let isHorizontalFace = (vs) => vs[0].y === vs[1].y && vs[1].y === vs[2].y
     let lineIntersects = (a, b) => (a > h && h > b) || (b > h && h > a)
 
     let out = []
-    g.faces.forEach((f) => {
-        let vs = [g.vertices[f.a], g.vertices[f.b], g.vertices[f.c]]
+    triangles.faces.forEach((f) => {
+        let vs = [triangles.vertices[f.a], triangles.vertices[f.b], triangles.vertices[f.c]]
         let ls = [
             new THREE.Line3(vs[0], vs[1]),
             new THREE.Line3(vs[1], vs[2]),
@@ -188,7 +187,7 @@ function computeLayerSegments(show) {
                 out.push(new THREE.Line3(vAt(ls[ils[0]]), vAt(ls[ils[1]])))
             } else if (ils.length === 1) {
                 vs.forEach((v) => {
-                    if (v.y == h)
+                    if (v.y === h)
                         out.push(new THREE.Line3(vAt(ls[ils[0]]), v))
                 })
             } else {
@@ -202,14 +201,33 @@ function computeLayerSegments(show) {
     if (show) {
         out.forEach((l) => makeLine(l))
 
-        sliceLines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
+        contourLines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
             color: 0xff0000,
-            linewidth: 10,
-
         }))
-        scene.add(sliceLines)
+        scene.add(contourLines)
     }
 }
+
+function computeLayerLines() {
+    scene.remove(lines)
+
+
+    let geom = new THREE.Geometry()
+    let contours = contourLines.geometry
+    let bbox = new THREE.Box3().setFromObject(contourLines)
+
+
+    let x = new THREE.BoxHelper(contourLines, 0xff0000)
+    scene.add(x)
+
+    // intersect with lines
+
+    lines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
+        color: 0x00ff00,
+    }))
+    scene.add(lines)
+}
+
 
 function computeObjectHeight() {
     objectHeight = new THREE.Box3().setFromObject(mainObj).getSize(new THREE.Vector3()).y
@@ -244,7 +262,7 @@ function onObjectLoaded(geom) {
     tmp.add(new THREE.Vector3(0, bbY, 0))
 
 
-    let bbb = boundingBox(bb)
+    let bbb = boundingBox(bb, 0x0000ff, 0.2)
     group.add(bbb)
     obj.geometry.applyMatrix(new THREE.Matrix4().makeTranslation(tmp.x, tmp.y, tmp.z))
     bbb.translateOnAxis(new THREE.Vector3(0, 1, 0), bbY)
@@ -265,18 +283,19 @@ function slice() {
 
     computeLayerTriangles(options.showLayerTriangles)
     computeLayerSegments(options.showLayerSegments)
+    computeLayerLines(options.showLayerLines)
 }
 
-function boundingBox(bb) {
+function boundingBox(bb, color, opacity) {
     bb = bb.clone()
     let d = bb.max.clone().sub(bb.min)
     let geom = new THREE.CubeGeometry(d.x, d.y, d.z)
     geom = new THREE.EdgesGeometry(geom)
     let mat = new THREE.LineBasicMaterial({
-        color: 0x0000ff,
+        color: color,
         linewidth: 2,
         transparent: true,
-        opacity: 0.2,
+        opacity: opacity,
     })
     let bbWireframe = new THREE.LineSegments(geom, mat)
     return bbWireframe
