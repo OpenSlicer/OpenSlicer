@@ -9,7 +9,7 @@ let Timer = require('./timer')
 let gui = new dat.GUI()
 let controllers = {}
 let options = {
-    currentLayer: 0,
+    currentLayerNumber: 0,
     layerHeight: 0.2,
     nozzleDiameter: 0.4,
     showLayerTriangles: false,
@@ -29,16 +29,16 @@ let axesHelper
 
 
 let currentLayer
-let contourLines
-let intersectionPlane
-let layerTrianglesObject
-let lines
-let boundingSquare
+//let contourLines
+//let intersectionPlane
+//let layerTrianglesObject
+//let lines
+//let boundingSquare
 
 
 
 function loadMenu() {
-    controllers.currentLayer = gui.add(options, 'currentLayer', 0, 10000, 1).onChange(() => {
+    controllers.currentLayerNumber = gui.add(options, 'currentLayerNumber', 0, 10000, 1).onChange(() => {
         slice()
     })
     controllers.layerHeight = gui.add(options, 'layerHeight', 0.06, 10, 0.1).onChange(() => {
@@ -110,8 +110,8 @@ function computeObjectHeight() {
     objectHeight = new THREE.Box3().setFromObject(mainObj).getSize(new THREE.Vector3()).y
     numLayers = Math.floor(objectHeight / options.layerHeight)
     console.log("NumLayers", numLayers)
-    controllers.currentLayer.max(numLayers)
-    controllers.currentLayer.updateDisplay()
+    controllers.currentLayerNumber.max(numLayers)
+    controllers.currentLayerNumber.updateDisplay()
 }
 
 
@@ -179,15 +179,15 @@ function computeLayerTriangles(show) {
         opacity: 0.2,
     })
 
-    scene.remove(layerTrianglesObject)
+    scene.remove(currentLayer.layerTrianglesObject)
 
     timer.tick("Clone")
     //let g = mainGeom
     timer.tick("Geometry clone")
 
-    let h = options.currentLayer * options.layerHeight
-    scene.remove(intersectionPlane)
-    intersectionPlane = makePlane(h)
+    let h = options.currentLayerNumber * options.layerHeight
+    currentLayer.intersectionPlane = makePlane(h)
+    //currentLayer.add(currentLayer.intersectionPlane)
 
     let lineIntersects = (a, b) => (a > h && h > b) || (b > h && h > a)
     let keepFace = (f) => {
@@ -201,10 +201,10 @@ function computeLayerTriangles(show) {
     g2.faces = mainGeom.faces.filter(keepFace)
     timer.tick("After filter")
 
-    layerTrianglesObject = new THREE.Mesh(g2, mat)
+    currentLayer.layerTrianglesObject = new THREE.Mesh(g2, mat)
 
     if (show)
-        scene.add(layerTrianglesObject)
+        currentLayer.add(currentLayer.layerTrianglesObject)
 }
 
 
@@ -214,8 +214,8 @@ function computeLayerSegments(show) {
         geom.vertices.push(l.start)
         geom.vertices.push(l.end)
     }
-    let triangles = layerTrianglesObject.geometry
-    let h = options.currentLayer * options.layerHeight
+    let triangles = currentLayer.layerTrianglesObject.geometry
+    let h = options.currentLayerNumber * options.layerHeight
 
     let isHorizontalFace = (vs) => vs[0].y === vs[1].y && vs[1].y === vs[2].y
     let lineIntersects = (a, b) => (a > h && h > b) || (b > h && h > a)
@@ -275,22 +275,22 @@ function computeLayerSegments(show) {
 }
 
 function computeLayerLines() {
-    scene.remove(lines)
+    scene.remove(currentLayer.lines)
 
     let geom = new THREE.Geometry()
     let contours = currentLayer.contourLines.geometry
     let bbox = new THREE.Box3().setFromObject(currentLayer.contourLines)
 
 
-    boundingSquare = new THREE.BoxHelper(currentLayer.contourLines, 0xff0000)
-    currentLayer.add(boundingSquare)
+    currentLayer.boundingSquare = new THREE.BoxHelper(currentLayer.contourLines, 0xff0000)
+    currentLayer.add(currentLayer.boundingSquare)
 
     // intersect with lines
 
-    lines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
+    currentLayer.lines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
         color: 0x00ff00,
     }))
-    scene.add(lines)
+    currentLayer.add(currentLayer.lines)
 }
 
 
