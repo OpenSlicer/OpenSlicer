@@ -1,30 +1,39 @@
 import './index.css'
 import dat from 'dat.gui'
 
+let Timer = require('./timer')
+
 let gui = new dat.GUI()
-let menu = {}
+let controllers = {}
 let options = {
-    height: 0.,
+    currentLayer: 0,
+    layerHeight: 0.2,
+    nozzleDiameter: 0.4,
+    showLayerTriangles: false,
+    showLayerIntersection: true,
 }
+let numLayers = 0
 
 function loadMenu() {
-    menu.intersectionController = gui.add(options, 'height', 0, 100).onChange(() => {
-        showTest()
+    controllers.currentLayer = gui.add(options, 'currentLayer', 0, 10000).onChange(() => {
+        slice()
     })
-}
+    controllers.layerHeight = gui.add(options, 'layerHeight', 0.06, 0.5, 0.01).onChange(() => {
+        // reslice everything
+        slice()
+    })
+    controllers.nozzleDiameter = gui.add(options, 'nozzleDiameter', 0, 2, 0.1).onChange(() => {
+        // reslice everything
+        slice()
+    })
 
-function Timer() {
-    this.startTime = new Date().getTime()
-    this.lastTime = this.startTime
-}
+    controllers.showLayerTriangles = gui.add(options, 'showLayerTriangles').onChange(() => {
+        slice()
+    })
+    controllers.showLayerIntersection = gui.add(options, 'showLayerIntersection').onChange(() => {
+        slice()
+    })
 
-Timer.prototype.tick = function tick(log) {
-    let t = new Date().getTime()
-    let diff = t - this.lastTime
-
-    console.log(log, "Tick:", diff, "Total Elapsed:", t - this.startTime)
-
-    this.lastTime = t
 }
 
 
@@ -44,7 +53,7 @@ let camera, scene, renderer, controls
 let camLight = new THREE.DirectionalLight(0xffffff, 0.75)
 
 let intersectionPlane
-let intersectionObj
+let layerTrianglesObject
 let mainObj
 let sliceLines
 let mainGeom
@@ -87,7 +96,7 @@ function loadSTL(ev) {
     reader.readAsArrayBuffer(file)
 }
 
-function showTest() {
+function computeLayerTriangles(show) {
     timer = new Timer()
     let obj = mainObj
     let mat = new THREE.MeshBasicMaterial({
@@ -96,54 +105,51 @@ function showTest() {
         transparent: true,
         opacity: 0.2,
     })
-    scene.remove(intersectionObj)
 
-    intersectionObj = obj.clone()
+    scene.remove(layerTrianglesObject)
+
+    //layerTrianglesObject = obj.clone()
     timer.tick("Clone")
-    let g2 = new THREE.Geometry()
     //let g = mainGeom
     //console.log("Total triangles:", g.faces.length)
     timer.tick("Geometry clone")
 
-    let h = options.height
+    let h = options.currentLayer * options.layerHeight
     scene.remove(intersectionPlane)
     intersectionPlane = makePlane(h)
 
     let lineIntersects = (a, b) => (a > h && h > b) || (b > h && h > a)
     let keepFace = (f) => {
         let l = [mainGeom.vertices[f.a].y, mainGeom.vertices[f.b].y, mainGeom.vertices[f.c].y]
-        if (l[0] == l[1] && l[1] == l[2] && l[2] == h) return true
+        if (l[0] === l[1] && l[1] === l[2] && l[2] === h) return true
         return lineIntersects(l[0], l[1]) + lineIntersects(l[1], l[2]) + lineIntersects(l[2], l[0])
     }
-
+    let g2 = new THREE.Geometry()
     g2.vertices = mainGeom.vertices
     timer.tick("Before filter")
     g2.faces = mainGeom.faces.filter(keepFace)
     timer.tick("After filter")
-    //g.faces.needsUpdate = true
 
-    intersectionObj.geometry = g2
+    layerTrianglesObject = new THREE.Mesh(g2, mat)
 
-    //console.log(g)
-    intersectionObj.material = mat
-    intersectionObj.material.needsUpdate = true
-    //scene.add(intersectionObj)
-
-    showTest2()
+    //layerTrianglesObject.geometry = g2
+    //layerTrianglesObject.material = mat
+    //layerTrianglesObject.material.needsUpdate = true
+    if (show)
+        scene.add(layerTrianglesObject)
 }
 
 
-function showTest2() {
-
-    let geom = new THREE.Geometry()
+function computeLayerIntersection(show) {
     scene.remove(sliceLines)
 
+    let geom = new THREE.Geometry()
     let makeLine = (l) => {
         geom.vertices.push(l.start)
         geom.vertices.push(l.end)
     }
-    let g = intersectionObj.geometry
-    let h = options.height
+    let g = layerTrianglesObject.geometry
+    let h = options.currentLayer * options.layerHeight
 
     let isHorizontalFace = (vs) => vs[0].y === vs[1].y && vs[1].y === vs[2].y
     let lineIntersects = (a, b) => (a > h && h > b) || (b > h && h > a)
@@ -193,28 +199,30 @@ function showTest2() {
 
     })
 
-    out.forEach((l) => makeLine(l))
-    //console.log(sliceGroup)
+    if (show) {
+        out.forEach((l) => makeLine(l))
+        //console.log(sliceGroup)
 
-    sliceLines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
-        color: 0xff0000,
-        linewidth: 3,
+        sliceLines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
+            color: 0xff0000,
+            linewidth: 10,
 
-    }))
-    scene.add(sliceLines)
+        }))
+        scene.add(sliceLines)
+    }
 }
 
 
 function onObjectLoaded(geom) {
     geom.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-    geom.applyMatrix(new THREE.Matrix4().makeTranslation(0, -1e-15, 0))
+    geom.applyMatrix(new THREE.Matrix4().makeTranslation(0, -1e-12, 0))
 
     let group = new THREE.Group()
     scene.add(group)
     let mat = new THREE.MeshPhongMaterial({
         color: 0xffffff,
         transparent: true,
-        opacity: 0.2,
+        opacity: 0.4,
         //wireframe: true,
     })
     let obj = new THREE.Mesh(geom, mat)
@@ -230,7 +238,9 @@ function onObjectLoaded(geom) {
     tmp.add(new THREE.Vector3(0, bbY, 0))
 
     let size = bb.getSize(new THREE.Vector3())
-    menu.intersectionController.max(size.y)
+    numLayers = size.y / options.layerHeight
+    controllers.currentLayer.max(Math.ceil(numLayers))
+    // controllers.currentLayer.setValue(0)
 
     let bbb = boundingBox(bb)
     group.add(bbb)
@@ -243,7 +253,15 @@ function onObjectLoaded(geom) {
     mainObj = obj
     mainGeom = new THREE.Geometry().fromBufferGeometry(mainObj.geometry)
 
-    showTest()
+
+    slice()
+}
+
+function slice() {
+    if (mainObj === undefined) return
+
+    computeLayerTriangles(options.showLayerTriangles)
+    computeLayerIntersection(options.showLayerIntersection)
 }
 
 function boundingBox(bb) {
