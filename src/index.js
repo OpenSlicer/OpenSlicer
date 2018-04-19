@@ -4,13 +4,27 @@ import dat from 'dat.gui'
 let gui = new dat.GUI()
 let menu = {}
 let options = {
-    height: 0,
+    height: 0.,
 }
 
 function loadMenu() {
     menu.intersectionController = gui.add(options, 'height', 0, 100).onChange(() => {
         showTest()
     })
+}
+
+function Timer() {
+    this.startTime = new Date().getTime()
+    this.lastTime = this.startTime
+}
+
+Timer.prototype.tick = function tick(log) {
+    let t = new Date().getTime()
+    let diff = t - this.lastTime
+
+    console.log(log, "Tick:", diff, "Total Elapsed:", t - this.startTime)
+
+    this.lastTime = t
 }
 
 
@@ -33,6 +47,8 @@ let intersectionPlane
 let intersectionObj
 let mainObj
 let sliceGroup
+let mainGeom
+let timer
 
 init()
 animate()
@@ -72,16 +88,22 @@ function loadSTL(ev) {
 }
 
 function showTest() {
+    timer = new Timer()
     let obj = mainObj
-    let mat = new THREE.MeshPhongMaterial({
+    let mat = new THREE.MeshBasicMaterial({
         color: 0x0000ff,
         wireframe: true,
-        linewidth: 1,
+        transparent: true,
+        opacity: 0.2,
     })
     scene.remove(intersectionObj)
 
     intersectionObj = obj.clone()
-    let g = new THREE.Geometry().fromBufferGeometry(intersectionObj.geometry)
+    timer.tick("Clone")
+    let g2 = new THREE.Geometry()
+    //let g = mainGeom
+    //console.log("Total triangles:", g.faces.length)
+    timer.tick("Geometry clone")
 
     let h = options.height
     scene.remove(intersectionPlane)
@@ -89,15 +111,18 @@ function showTest() {
 
     let lineIntersects = (a, b) => (a > h && h > b) || (b > h && h > a)
     let keepFace = (f) => {
-        let l = [g.vertices[f.a].y, g.vertices[f.b].y, g.vertices[f.c].y]
+        let l = [mainGeom.vertices[f.a].y, mainGeom.vertices[f.b].y, mainGeom.vertices[f.c].y]
         if (l[0] == l[1] && l[1] == l[2] && l[2] == h) return true
-        return lineIntersects(l[0], l[1]) || lineIntersects(l[1], l[2]) || lineIntersects(l[2], l[0])
+        return lineIntersects(l[0], l[1]) + lineIntersects(l[1], l[2]) + lineIntersects(l[2], l[0])
     }
 
-    g.faces = g.faces.filter(keepFace)
-    g.faces.needsUpdate = true
+    g2.vertices = mainGeom.vertices
+    timer.tick("Before filter")
+    g2.faces = mainGeom.faces.filter(keepFace)
+    timer.tick("After filter")
+    //g.faces.needsUpdate = true
 
-    intersectionObj.geometry = g
+    intersectionObj.geometry = g2
 
     //console.log(g)
     intersectionObj.material = mat
@@ -152,15 +177,25 @@ function showTest2() {
                 out.push(l)
             })
         } else { // face intersects plane
+            //console.log(vs, ls)
             let ils = []
-            ls.forEach((l) => {
+            ls.forEach((l, i) => {
+                //console.log(l, lineIntersects(l.start.y, l.end.y))
                 if (lineIntersects(l.start.y, l.end.y))
-                    ils.push(l)
-
+                    ils.push(i)
             })
-
             let vAt = (l) => l.at((h - l.start.y) / (l.end.y - l.start.y), new THREE.Vector3())
-            out.push(new THREE.Line3(vAt(ils[0]), vAt(ils[1])))
+            if (ils.length === 2) {
+                out.push(new THREE.Line3(vAt(ls[ils[0]]), vAt(ls[ils[1]])))
+            } else if (ils.length === 1) {
+                vs.forEach((v) => {
+                    if (v.y == h)
+                        out.push(new THREE.Line3(vAt(ls[ils[0]]), v))
+                })
+            } else {
+                throw "Invalid ils length: " + ils.length
+            }
+
         }
 
     })
@@ -173,6 +208,7 @@ function showTest2() {
 
 function onObjectLoaded(geom) {
     geom.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+    geom.applyMatrix(new THREE.Matrix4().makeTranslation(0, -1e-15, 0))
 
     let group = new THREE.Group()
     scene.add(group)
@@ -206,6 +242,8 @@ function onObjectLoaded(geom) {
     resetCamera(radius)
 
     mainObj = obj
+    mainGeom = new THREE.Geometry().fromBufferGeometry(mainObj.geometry)
+
     showTest()
 }
 
