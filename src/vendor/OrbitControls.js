@@ -323,23 +323,12 @@ function OrbitControls(object, domElement) {
 
         return function panUp(distance, objectMatrix) {
 
-            if (scope.screenSpacePanning === true) {
-
-                v.setFromMatrixColumn(objectMatrix, 1)
-
-            } else {
-
-                v.setFromMatrixColumn(objectMatrix, 0)
-                v.crossVectors(scope.object.up, v)
-
-            }
-
+            v.setFromMatrixColumn(objectMatrix, 1) // get X column of objectMatrix
             v.multiplyScalar(distance)
 
             panOffset.add(v)
 
         }
-
     }()
 
     // deltaX and deltaY are in pixels; right and down are positive
