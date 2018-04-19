@@ -11,14 +11,16 @@ let options = {
     nozzleDiameter: 0.4,
     showLayerTriangles: false,
     showLayerIntersection: true,
+    test: 5,
 }
 let numLayers = 0
 
 function loadMenu() {
     controllers.currentLayer = gui.add(options, 'currentLayer', 0, 10000).onChange(() => {
         slice()
-    })
+    }).listen()
     controllers.layerHeight = gui.add(options, 'layerHeight', 0.06, 0.5, 0.01).onChange(() => {
+        computeObjectHeight()
         // reslice everything
         slice()
     })
@@ -33,7 +35,6 @@ function loadMenu() {
     controllers.showLayerIntersection = gui.add(options, 'showLayerIntersection').onChange(() => {
         slice()
     })
-
 }
 
 
@@ -58,6 +59,7 @@ let mainObj
 let sliceLines
 let mainGeom
 let timer
+let objectHeight
 
 init()
 animate()
@@ -212,6 +214,14 @@ function computeLayerIntersection(show) {
     }
 }
 
+function computeObjectHeight() {
+    objectHeight = new THREE.Box3().setFromObject(mainObj).getSize(new THREE.Vector3()).y
+    numLayers = objectHeight / options.layerHeight
+    console.log("NumLayers", Math.floor(numLayers))
+    controllers.currentLayer.max(Math.floor(numLayers))
+    controllers.currentLayer.updateDisplay()
+}
+
 
 function onObjectLoaded(geom) {
     geom.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
@@ -237,10 +247,6 @@ function onObjectLoaded(geom) {
     let bbY = bb.getSize(new THREE.Vector3(0, 0, 0)).y / 2
     tmp.add(new THREE.Vector3(0, bbY, 0))
 
-    let size = bb.getSize(new THREE.Vector3())
-    numLayers = size.y / options.layerHeight
-    controllers.currentLayer.max(Math.ceil(numLayers))
-    // controllers.currentLayer.setValue(0)
 
     let bbb = boundingBox(bb)
     group.add(bbb)
@@ -251,6 +257,8 @@ function onObjectLoaded(geom) {
     resetCamera(radius)
 
     mainObj = obj
+    computeObjectHeight()
+
     mainGeom = new THREE.Geometry().fromBufferGeometry(mainObj.geometry)
 
 
