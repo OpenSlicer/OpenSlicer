@@ -46,7 +46,7 @@ let camLight = new THREE.DirectionalLight(0xffffff, 0.75)
 let intersectionPlane
 let intersectionObj
 let mainObj
-let sliceGroup
+let sliceLines
 let mainGeom
 let timer
 
@@ -134,20 +134,13 @@ function showTest() {
 
 
 function showTest2() {
-    const mat = new THREE.LineBasicMaterial({
-        color: 0xff0000,
-        linewidth: 3,
 
-    })
-
-    scene.remove(sliceGroup)
-    sliceGroup = new THREE.Group()
+    let geom = new THREE.Geometry()
+    scene.remove(sliceLines)
 
     let makeLine = (l) => {
-        let geom = new THREE.Geometry()
         geom.vertices.push(l.start)
         geom.vertices.push(l.end)
-        sliceGroup.add(new THREE.Line(geom, mat))
     }
     let g = intersectionObj.geometry
     let h = options.height
@@ -202,7 +195,13 @@ function showTest2() {
 
     out.forEach((l) => makeLine(l))
     //console.log(sliceGroup)
-    scene.add(sliceGroup)
+
+    sliceLines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
+        color: 0xff0000,
+        linewidth: 3,
+
+    }))
+    scene.add(sliceLines)
 }
 
 
