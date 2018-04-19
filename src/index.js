@@ -25,22 +25,23 @@ let mainObj
 let mainGeom
 let timer
 let objectHeight
-
-
-let currentLayer = new THREE.Group()
 let axesHelper
+
+
+let currentLayer
 let contourLines
 let intersectionPlane
 let layerTrianglesObject
 let lines
+let boundingSquare
 
 
 
 function loadMenu() {
-    controllers.currentLayer = gui.add(options, 'currentLayer', 0, 10000).onChange(() => {
+    controllers.currentLayer = gui.add(options, 'currentLayer', 0, 10000, 1).onChange(() => {
         slice()
     })
-    controllers.layerHeight = gui.add(options, 'layerHeight', 0.06, 0.5, 0.01).onChange(() => {
+    controllers.layerHeight = gui.add(options, 'layerHeight', 0.06, 10, 0.1).onChange(() => {
         computeObjectHeight()
         slice()
     })
@@ -102,6 +103,72 @@ function loadSTL(ev) {
     reader.readAsArrayBuffer(file)
 }
 
+
+
+
+function computeObjectHeight() {
+    objectHeight = new THREE.Box3().setFromObject(mainObj).getSize(new THREE.Vector3()).y
+    numLayers = Math.floor(objectHeight / options.layerHeight)
+    console.log("NumLayers", numLayers)
+    controllers.currentLayer.max(numLayers)
+    controllers.currentLayer.updateDisplay()
+}
+
+
+function onObjectLoaded(geom) {
+    geom.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+    geom.applyMatrix(new THREE.Matrix4().makeTranslation(0, -1e-12, 0))
+
+    let group = new THREE.Group()
+    scene.add(group)
+    let mat = new THREE.MeshPhongMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.4,
+    })
+    let obj = new THREE.Mesh(geom, mat)
+    group.add(obj)
+
+    let bb = new THREE.Box3().setFromObject(obj)
+    let radius = bb.max.clone().sub(bb.min).length() / 2
+    let tmp = bb.max.clone().sub(bb.min)
+    tmp.divideScalar(2)
+    tmp.multiplyScalar(-1)
+    tmp.sub(bb.min)
+    let bbY = bb.getSize(new THREE.Vector3(0, 0, 0)).y / 2
+    tmp.add(new THREE.Vector3(0, bbY, 0))
+
+
+    let bbb = boundingBox(bb, 0x0000ff, 0.2)
+    group.add(bbb)
+    obj.geometry.applyMatrix(new THREE.Matrix4().makeTranslation(tmp.x, tmp.y, tmp.z))
+    bbb.translateOnAxis(new THREE.Vector3(0, 1, 0), bbY)
+
+    resetCamera(radius)
+
+    mainObj = obj
+    computeObjectHeight()
+
+    mainGeom = new THREE.Geometry().fromBufferGeometry(mainObj.geometry)
+
+
+    slice()
+}
+
+function slice() {
+    if (mainObj === undefined) return
+    if (currentLayer !== undefined) {
+        scene.remove(currentLayer)
+    }
+
+    currentLayer = new THREE.Group()
+    scene.add(currentLayer)
+
+    computeLayerTriangles(options.showLayerTriangles)
+    computeLayerSegments(options.showLayerSegments)
+    computeLayerLines(options.showLayerLines)
+}
+
 function computeLayerTriangles(show) {
     timer = new Timer()
     let obj = mainObj
@@ -116,7 +183,6 @@ function computeLayerTriangles(show) {
 
     timer.tick("Clone")
     //let g = mainGeom
-    //console.log("Total triangles:", g.faces.length)
     timer.tick("Geometry clone")
 
     let h = options.currentLayer * options.layerHeight
@@ -143,8 +209,6 @@ function computeLayerTriangles(show) {
 
 
 function computeLayerSegments(show) {
-    scene.remove(contourLines)
-
     let geom = new THREE.Geometry()
     let makeLine = (l) => {
         geom.vertices.push(l.start)
@@ -198,27 +262,28 @@ function computeLayerSegments(show) {
 
     })
 
-    if (show) {
-        out.forEach((l) => makeLine(l))
+    out.forEach((l) => makeLine(l))
 
-        contourLines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
-            color: 0xff0000,
-        }))
-        scene.add(contourLines)
+    currentLayer.contourLines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
+        color: 0xff0000,
+    }))
+
+
+    if (options.showLayerSegments) {
+        currentLayer.add(currentLayer.contourLines)
     }
 }
 
 function computeLayerLines() {
     scene.remove(lines)
 
-
     let geom = new THREE.Geometry()
-    let contours = contourLines.geometry
-    let bbox = new THREE.Box3().setFromObject(contourLines)
+    let contours = currentLayer.contourLines.geometry
+    let bbox = new THREE.Box3().setFromObject(currentLayer.contourLines)
 
 
-    let x = new THREE.BoxHelper(contourLines, 0xff0000)
-    scene.add(x)
+    boundingSquare = new THREE.BoxHelper(currentLayer.contourLines, 0xff0000)
+    currentLayer.add(boundingSquare)
 
     // intersect with lines
 
@@ -228,63 +293,6 @@ function computeLayerLines() {
     scene.add(lines)
 }
 
-
-function computeObjectHeight() {
-    objectHeight = new THREE.Box3().setFromObject(mainObj).getSize(new THREE.Vector3()).y
-    numLayers = objectHeight / options.layerHeight
-    console.log("NumLayers", Math.floor(numLayers))
-    controllers.currentLayer.max(Math.floor(numLayers))
-    controllers.currentLayer.updateDisplay()
-}
-
-
-function onObjectLoaded(geom) {
-    geom.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-    geom.applyMatrix(new THREE.Matrix4().makeTranslation(0, -1e-12, 0))
-
-    let group = new THREE.Group()
-    scene.add(group)
-    let mat = new THREE.MeshPhongMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.4,
-    })
-    let obj = new THREE.Mesh(geom, mat)
-    group.add(obj)
-
-    let bb = new THREE.Box3().setFromObject(obj)
-    let radius = bb.max.clone().sub(bb.min).length() / 2
-    let tmp = bb.max.clone().sub(bb.min)
-    tmp.divideScalar(2)
-    tmp.multiplyScalar(-1)
-    tmp.sub(bb.min)
-    let bbY = bb.getSize(new THREE.Vector3(0, 0, 0)).y / 2
-    tmp.add(new THREE.Vector3(0, bbY, 0))
-
-
-    let bbb = boundingBox(bb, 0x0000ff, 0.2)
-    group.add(bbb)
-    obj.geometry.applyMatrix(new THREE.Matrix4().makeTranslation(tmp.x, tmp.y, tmp.z))
-    bbb.translateOnAxis(new THREE.Vector3(0, 1, 0), bbY)
-
-    resetCamera(radius)
-
-    mainObj = obj
-    computeObjectHeight()
-
-    mainGeom = new THREE.Geometry().fromBufferGeometry(mainObj.geometry)
-
-
-    slice()
-}
-
-function slice() {
-    if (mainObj === undefined) return
-
-    computeLayerTriangles(options.showLayerTriangles)
-    computeLayerSegments(options.showLayerSegments)
-    computeLayerLines(options.showLayerLines)
-}
 
 function boundingBox(bb, color, opacity) {
     bb = bb.clone()
