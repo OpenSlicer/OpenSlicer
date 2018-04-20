@@ -289,18 +289,21 @@ function computeLayerLines() {
 
     let firstX = Math.ceil(bb.min.x / options.nozzleSize) * options.nozzleSize
 
+
     for (let x = firstX; x < bb.max.x; x += options.nozzleSize) {
-
-        let line = new THREE.Line3(new THREE.Vector3(x, h, minz), new THREE.Vector3(x, h, maxz))
-
+        let vAt = (l) => l.at((x - l.start.x) / (l.end.x - l.start.x), new THREE.Vector3())
+        //let line = new THREE.Line3(new THREE.Vector3(x, h, minz), new THREE.Vector3(x, h, maxz))
         let is = []
+        let lineIntersects = (a , b) => (a >= x && x >= b) || (b > x && x > a)
         currentLayer.segments.forEach((s) => {
-            // if intersects
-
-        })
-
-
-        makeLine(line)
+            // if intersect
+            if(lineIntersects(s.start.x,s.end.x)) is.push(s)
+    })
+        let ordp = []
+        for(let i =0; i<is.length;i+=1) ordp.push(vAt(is[i]))
+        ordp.sort((a, b) => a.z - b.z)
+        for(let i =0; i<is.length;i=i+2)makeLine(new THREE.Line3(ordp[i],ordp[i+1]))
+        //makeLine(line)
     }
 
 
