@@ -11,7 +11,7 @@ let controllers = {}
 let options = {
     currentLayerNumber: 0,
     layerHeight: 0.2,
-    nozzleDiameter: 0.4,
+    nozzleSize: 0.4,
     showLayerTriangles: false,
     showLayerSegments: true,
     showLayerLines: true,
@@ -29,12 +29,6 @@ let axesHelper
 
 
 let currentLayer
-//let contourLines
-//let intersectionPlane
-//let layerTrianglesObject
-//let lines
-//let boundingSquare
-
 
 
 function loadMenu() {
@@ -45,7 +39,7 @@ function loadMenu() {
         computeObjectHeight()
         slice()
     })
-    controllers.nozzleDiameter = gui.add(options, 'nozzleDiameter', 0, 2, 0.1).onChange(() => {
+    controllers.nozzleSize = gui.add(options, 'nozzleSize', 0, 2, 0.1).onChange(() => {
         slice()
     })
     controllers.showLayerTriangles = gui.add(options, 'showLayerTriangles').onChange(() => {
@@ -102,8 +96,6 @@ function loadSTL(ev) {
     }, false)
     reader.readAsArrayBuffer(file)
 }
-
-
 
 
 function computeObjectHeight() {
@@ -209,10 +201,12 @@ function computeLayerTriangles(show) {
 
 
 function computeLayerSegments(show) {
+    currentLayer.segments = []
     let geom = new THREE.Geometry()
     let makeLine = (l) => {
         geom.vertices.push(l.start)
         geom.vertices.push(l.end)
+        currentLayer.segments.push(l)
     }
     let triangles = currentLayer.layerTrianglesObject.geometry
     let h = options.currentLayerNumber * options.layerHeight
@@ -271,24 +265,49 @@ function computeLayerSegments(show) {
 
     if (options.showLayerSegments) {
         currentLayer.add(currentLayer.contourLines)
+
+        currentLayer.boundingSquare = new THREE.BoxHelper(currentLayer.contourLines, 0x22ff22)
+        currentLayer.add(currentLayer.boundingSquare)
     }
 }
 
 function computeLayerLines() {
     scene.remove(currentLayer.lines)
-
-    let geom = new THREE.Geometry()
     let contours = currentLayer.contourLines.geometry
-    let bbox = new THREE.Box3().setFromObject(currentLayer.contourLines)
+    let geom = new THREE.Geometry()
+    let h = options.currentLayerNumber * options.layerHeight
+
+    let makeLine = (l) => {
+        geom.vertices.push(l.start)
+        geom.vertices.push(l.end)
+    }
+
+    let bb = new THREE.Box3().setFromObject(currentLayer.contourLines)
+
+    let minz = bb.min.z
+    let maxz = bb.max.z
+
+    let firstX = Math.ceil(bb.min.x / options.nozzleSize) * options.nozzleSize
+
+    for (let x = firstX; x < bb.max.x; x += options.nozzleSize) {
+
+        let line = new THREE.Line3(new THREE.Vector3(x, h, minz), new THREE.Vector3(x, h, maxz))
+
+        let is = []
+        currentLayer.segments.forEach((s) => {
+            // if intersects
+
+        })
 
 
-    currentLayer.boundingSquare = new THREE.BoxHelper(currentLayer.contourLines, 0xff0000)
-    currentLayer.add(currentLayer.boundingSquare)
+        makeLine(line)
+    }
+
 
     // intersect with lines
 
     currentLayer.lines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
-        color: 0x00ff00,
+        color: 0x3949AB,
     }))
     currentLayer.add(currentLayer.lines)
 }
