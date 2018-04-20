@@ -16,6 +16,7 @@ let options = {
     showLayerSegments: true,
     showLayerLines: true,
     axesHelper: true,
+    wireframe: false,
 }
 let numLayers = 0
 let canvas = document.getElementById('canvas')
@@ -48,11 +49,15 @@ function loadMenu() {
     controllers.showLayerSegments = gui.add(options, 'showLayerSegments').onChange(() => {
         slice()
     })
-    controllers.showLayerLines = gui.add(options, 'showLayerLines').onChange(() => {
-        slice()
+    controllers.showLayerLines = gui.add(options, 'showLayerLines').onChange((v) => {
+        currentLayer.lines.visible = v
     })
     controllers.axesHelper = gui.add(options, 'axesHelper').onChange((v) => {
         axesHelper.visible = v
+    })
+    controllers.wireframe = gui.add(options, 'wireframe').onChange((v) => {
+        mainObj.material.wireframe = v
+        mainObj.material.needsUpdate = true
     })
 }
 
@@ -179,12 +184,17 @@ function computeLayerTriangles(show) {
 
     let h = options.currentLayerNumber * options.layerHeight
     currentLayer.intersectionPlane = makePlane(h)
-    //currentLayer.add(currentLayer.intersectionPlane)
 
     let lineIntersects = (a, b) => (a > h && h > b) || (b > h && h > a)
     let keepFace = (f) => {
         let l = [mainGeom.vertices[f.a].y, mainGeom.vertices[f.b].y, mainGeom.vertices[f.c].y]
-        if (l[0] === l[1] && l[1] === l[2] && l[2] === h) return true
+        let keepLine = (a, b) => l[a] === l[b] && l[a] === h
+        if (keepLine(0, 1) || keepLine(1, 2) || keepLine(2, 0)) {
+            return true
+        }
+        if (l[0] === l[1] && l[1] === l[2] && l[2] === h) {
+            return true
+        }
         return lineIntersects(l[0], l[1]) + lineIntersects(l[1], l[2]) + lineIntersects(l[2], l[0])
     }
     let g2 = new THREE.Geometry()
@@ -213,6 +223,7 @@ function computeLayerSegments(show) {
 
     let isHorizontalFace = (vs) => vs[0].y === vs[1].y && vs[1].y === vs[2].y
     let lineIntersects = (a, b) => (a > h && h > b) || (b > h && h > a)
+    let lineContained = (l) => l.start.y === l.end.y === h
 
     let out = []
     triangles.faces.forEach((f) => {
@@ -234,7 +245,8 @@ function computeLayerSegments(show) {
                 }
                 out.push(l)
             })
-        } else { // face intersects plane
+        }
+        else { // face not contained in plane
             let ils = []
             ls.forEach((l, i) => {
                 if (lineIntersects(l.start.y, l.end.y))
@@ -249,7 +261,16 @@ function computeLayerSegments(show) {
                         out.push(new THREE.Line3(vAt(ls[ils[0]]), v))
                 })
             } else {
-                throw "Invalid ils length: " + ils.length
+                if (lineContained(ls[0]) || lineContained(ls[1]) || lineContained(ls[2])) {
+                    console.log("lineContained")
+                    ls.forEach((l) => {
+                        if (lineContained(l)) {
+                            ils.push(l)
+                            console.log("lineContained", l)
+                        }
+                    })
+                }
+                console.error("Invalid ils length", ils.length, ls, "h=", h)
             }
 
         }
@@ -258,6 +279,7 @@ function computeLayerSegments(show) {
 
     out.forEach((l) => makeLine(l))
 
+    console.log("out", out.length, out)
     currentLayer.contourLines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
         color: 0xff0000,
     }))
@@ -267,7 +289,7 @@ function computeLayerSegments(show) {
         currentLayer.add(currentLayer.contourLines)
 
         currentLayer.boundingSquare = new THREE.BoxHelper(currentLayer.contourLines, 0x22ff22)
-        currentLayer.add(currentLayer.boundingSquare)
+        //currentLayer.add(currentLayer.boundingSquare)
     }
 }
 
@@ -294,15 +316,14 @@ function computeLayerLines() {
         let vAt = (l) => l.at((x - l.start.x) / (l.end.x - l.start.x), new THREE.Vector3())
         //let line = new THREE.Line3(new THREE.Vector3(x, h, minz), new THREE.Vector3(x, h, maxz))
         let is = []
-        let lineIntersects = (a , b) => (a >= x && x >= b) || (b > x && x > a)
+        let lineIntersects = (a, b) => (a >= x && x >= b) || (b > x && x > a)
         currentLayer.segments.forEach((s) => {
-            // if intersect
-            if(lineIntersects(s.start.x,s.end.x)) is.push(s)
-    })
+            if (lineIntersects(s.start.x, s.end.x)) is.push(s)
+        })
         let ordp = []
-        for(let i =0; i<is.length;i+=1) ordp.push(vAt(is[i]))
+        for (let i = 0; i < is.length; i += 1) ordp.push(vAt(is[i]))
         ordp.sort((a, b) => a.z - b.z)
-        for(let i =0; i<is.length;i=i+2)makeLine(new THREE.Line3(ordp[i],ordp[i+1]))
+        for (let i = 0; i < is.length; i = i + 2) makeLine(new THREE.Line3(ordp[i], ordp[i + 1]))
         //makeLine(line)
     }
 
