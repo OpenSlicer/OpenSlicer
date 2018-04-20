@@ -223,7 +223,7 @@ function computeLayerSegments(show) {
 
     let isHorizontalFace = (vs) => vs[0].y === vs[1].y && vs[1].y === vs[2].y
     let lineIntersects = (a, b) => (a > h && h > b) || (b > h && h > a)
-    let lineContained = (l) => l.start.y === l.end.y === h
+    let lineContained = (l) => l.start.y === l.end.y && l.end.y === h
 
     let out = []
     triangles.faces.forEach((f) => {
@@ -262,15 +262,12 @@ function computeLayerSegments(show) {
                 })
             } else {
                 if (lineContained(ls[0]) || lineContained(ls[1]) || lineContained(ls[2])) {
-                    console.log("lineContained")
                     ls.forEach((l) => {
                         if (lineContained(l)) {
-                            ils.push(l)
-                            console.log("lineContained", l)
+                            out.push(l)
                         }
                     })
                 }
-                console.error("Invalid ils length", ils.length, ls, "h=", h)
             }
 
         }
@@ -306,9 +303,6 @@ function computeLayerLines() {
 
     let bb = new THREE.Box3().setFromObject(currentLayer.contourLines)
 
-    let minz = bb.min.z
-    let maxz = bb.max.z
-
     let firstX = Math.ceil(bb.min.x / options.nozzleSize) * options.nozzleSize
 
 
@@ -316,7 +310,7 @@ function computeLayerLines() {
         let vAt = (l) => l.at((x - l.start.x) / (l.end.x - l.start.x), new THREE.Vector3())
         //let line = new THREE.Line3(new THREE.Vector3(x, h, minz), new THREE.Vector3(x, h, maxz))
         let is = []
-        let lineIntersects = (a, b) => (a >= x && x >= b) || (b > x && x > a)
+        let lineIntersects = (a, b) => (a >= x && x >= b) || (b >= x && x >= a)
         currentLayer.segments.forEach((s) => {
             if (lineIntersects(s.start.x, s.end.x)) is.push(s)
         })
@@ -324,7 +318,6 @@ function computeLayerLines() {
         for (let i = 0; i < is.length; i += 1) ordp.push(vAt(is[i]))
         ordp.sort((a, b) => a.z - b.z)
         for (let i = 0; i < is.length; i = i + 2) makeLine(new THREE.Line3(ordp[i], ordp[i + 1]))
-        //makeLine(line)
     }
 
 
