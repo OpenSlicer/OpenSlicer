@@ -5,6 +5,7 @@ let THREE = require('three')
 let OrbitControls = require('./vendor/OrbitControls')
 let STLLoader = require('./vendor/STLLoader')
 let Timer = require('./timer')
+let Util = require('./util')
 
 let gui = new dat.GUI()
 let controllers = {}
@@ -176,7 +177,9 @@ function computeLayerTriangles(show) {
         opacity: 0.2,
     })
 
-    scene.remove(currentLayer.layerTrianglesObject)
+    let plane = new THREE.Plane()
+
+    //scene.remove(currentLayer.layerTrianglesObject)
 
     timer.tick("Clone")
     //let g = mainGeom
@@ -226,6 +229,12 @@ function computeLayerSegments(show) {
     let lineContained = (l) => l.start.y === l.end.y && l.end.y === h
 
     let out = []
+    let containedLines = []
+    let addContainedLine = (l) => {
+        containedLines.push()
+    }
+
+
     triangles.faces.forEach((f) => {
         let vs = [triangles.vertices[f.a], triangles.vertices[f.b], triangles.vertices[f.c]]
         let ls = [
@@ -234,17 +243,17 @@ function computeLayerSegments(show) {
             new THREE.Line3(vs[2], vs[0]),
         ]
         if (isHorizontalFace(vs)) {
-            ls.forEach((l) => {
-                for (let i = 0; i < out.length; i++) {
-                    if (!out[i].equals(l) &&
-                        !out[i].equals(new THREE.Line3(l.end, l.start))) {
-                        continue
-                    }
-                    out.splice(i, 1)
-                    return
-                }
-                out.push(l)
-            })
+            // ls.forEach((l) => {
+            // for (let i = 0; i < out.length; i++) {
+            //     if (!out[i].equals(l) &&
+            //         !out[i].equals(new THREE.Line3(l.end, l.start))) {
+            //         continue
+            //     }
+            //     out.splice(i, 1)
+            //     return
+            // }
+            // out.push(l)
+            // })
         }
         else { // face not contained in plane
             let ils = []
@@ -269,7 +278,6 @@ function computeLayerSegments(show) {
                     })
                 }
             }
-
         }
 
     })
@@ -291,7 +299,7 @@ function computeLayerSegments(show) {
 }
 
 function computeLayerLines() {
-    scene.remove(currentLayer.lines)
+    //scene.remove(currentLayer.lines)
     let contours = currentLayer.contourLines.geometry
     let geom = new THREE.Geometry()
     let h = options.currentLayerNumber * options.layerHeight
@@ -317,7 +325,12 @@ function computeLayerLines() {
         let ordp = []
         for (let i = 0; i < is.length; i += 1) ordp.push(vAt(is[i]))
         ordp.sort((a, b) => a.z - b.z)
-        for (let i = 0; i < is.length; i = i + 2) makeLine(new THREE.Line3(ordp[i], ordp[i + 1]))
+        for (let i = 0; i < is.length; i = i + 2) {
+            if (i < ordp.length - 1) {
+                if (ordp[i].z === ordp[i + 1].z) i += 1
+                makeLine(new THREE.Line3(ordp[i], ordp[i + 1]))
+            }
+        }
     }
 
 
@@ -428,4 +441,6 @@ function animate() {
     camLight.position.copy(camera.position)
     renderer.render(scene, camera)
 }
+
+console.log("up", THREE.Object3D.DefaultUp)
 
