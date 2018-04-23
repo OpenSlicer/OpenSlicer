@@ -13,17 +13,20 @@ let options = {
     currentLayerNumber: 0,
     layerHeight: 0.2,
     nozzleSize: 0.4,
-    showLayerTriangles: false,
-    showLayerSegments: true,
-    showLayerLines: true,
+    triangles: false,
+    contours: true,
+    extrusionLines: true,
     axesHelper: true,
     wireframe: false,
+    normals: false,
 }
 let numLayers = 0
 let canvas = document.getElementById('canvas')
 let camera, scene, renderer, controls
 let camLight = new THREE.DirectionalLight(0xffffff, 0.75)
 let mainObj
+let wireframeObj
+let normalsHelper
 let mainGeom
 let timer
 let objectHeight
@@ -44,21 +47,23 @@ function loadMenu() {
     controllers.nozzleSize = gui.add(options, 'nozzleSize', 0, 2, 0.1).onChange(() => {
         slice()
     })
-    controllers.showLayerTriangles = gui.add(options, 'showLayerTriangles').onChange(() => {
+    controllers.triangles = gui.add(options, 'triangles').onChange(() => {
         slice()
     })
-    controllers.showLayerSegments = gui.add(options, 'showLayerSegments').onChange(() => {
+    controllers.contours = gui.add(options, 'contours').onChange(() => {
         slice()
     })
-    controllers.showLayerLines = gui.add(options, 'showLayerLines').onChange((v) => {
-        currentLayer.lines.visible = v
+    controllers.extrusionLines = gui.add(options, 'extrusionLines').onChange((v) => {
+        currentLayer.extrusionLines.visible = v
     })
     controllers.axesHelper = gui.add(options, 'axesHelper').onChange((v) => {
         axesHelper.visible = v
     })
     controllers.wireframe = gui.add(options, 'wireframe').onChange((v) => {
-        mainObj.material.wireframe = v
-        mainObj.material.needsUpdate = true
+        wireframeObj.visible = v
+    })
+    controllers.normals = gui.add(options, 'normals').onChange((v) => {
+        normalsHelper.visible = v
     })
 }
 
@@ -88,6 +93,7 @@ function loadSTL(ev) {
 
     let loader = new STLLoader()
 
+    if (mainObj) cleanup()
 
     if (ev.dataTransfer.files.length === 0) {
         return
@@ -122,12 +128,23 @@ function onObjectLoaded(geom) {
     let mat = new THREE.MeshPhongMaterial({
         color: 0xffffff,
         transparent: true,
-        opacity: 0.4,
+        opacity: 0.2,
     })
-    let obj = new THREE.Mesh(geom, mat)
-    group.add(obj)
 
-    let bb = new THREE.Box3().setFromObject(obj)
+    mainObj = new THREE.Mesh(geom, mat)
+    wireframeObj = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({
+        color: 0x000000,
+        transparent: true,
+        wireframe: true,
+        opacity: 0.8,
+    }))
+    wireframeObj.visible = options.wireframe
+
+
+    group.add(wireframeObj)
+    group.add(mainObj)
+
+    let bb = new THREE.Box3().setFromObject(mainObj)
     let radius = bb.max.clone().sub(bb.min).length() / 2
     let tmp = bb.max.clone().sub(bb.min)
     tmp.divideScalar(2)
@@ -139,18 +156,27 @@ function onObjectLoaded(geom) {
 
     let bbb = boundingBox(bb, 0x0000ff, 0.2)
     group.add(bbb)
-    obj.geometry.applyMatrix(new THREE.Matrix4().makeTranslation(tmp.x, tmp.y, tmp.z))
+    mainObj.geometry.applyMatrix(new THREE.Matrix4().makeTranslation(tmp.x, tmp.y, tmp.z))
     bbb.translateOnAxis(new THREE.Vector3(0, 1, 0), bbY)
 
     resetCamera(radius)
 
-    mainObj = obj
     computeObjectHeight()
 
     mainGeom = new THREE.Geometry().fromBufferGeometry(mainObj.geometry)
 
 
+    let t = new THREE.Mesh(mainGeom, new THREE.MeshBasicMaterial())
+    normalsHelper = new THREE.FaceNormalsHelper(t, 3, 0x0000ff, 1)
+    normalsHelper.visible = options.normals
+    group.add(normalsHelper)
+
+
     slice()
+}
+
+function cleanup() {
+    scene.remove(mainObj.parent)
 }
 
 function slice() {
@@ -162,9 +188,9 @@ function slice() {
     currentLayer = new THREE.Group()
     scene.add(currentLayer)
 
-    computeLayerTriangles(options.showLayerTriangles)
-    computeLayerSegments(options.showLayerSegments)
-    computeLayerLines(options.showLayerLines)
+    computeLayerTriangles(options.triangles)
+    computeContours(options.contours)
+    computeLayerLines(options.extrusionLines)
 }
 
 function computeLayerTriangles(show) {
@@ -213,7 +239,7 @@ function computeLayerTriangles(show) {
 }
 
 
-function computeLayerSegments(show) {
+function computeContours(show) {
     currentLayer.segments = []
     let geom = new THREE.Geometry()
     let makeLine = (l) => {
@@ -290,7 +316,7 @@ function computeLayerSegments(show) {
     }))
 
 
-    if (options.showLayerSegments) {
+    if (options.contours) {
         currentLayer.add(currentLayer.contourLines)
 
         currentLayer.boundingSquare = new THREE.BoxHelper(currentLayer.contourLines, 0x22ff22)
@@ -299,7 +325,6 @@ function computeLayerSegments(show) {
 }
 
 function computeLayerLines() {
-    //scene.remove(currentLayer.lines)
     let contours = currentLayer.contourLines.geometry
     let geom = new THREE.Geometry()
     let h = options.currentLayerNumber * options.layerHeight
@@ -336,10 +361,11 @@ function computeLayerLines() {
 
     // intersect with lines
 
-    currentLayer.lines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
+    currentLayer.extrusionLines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
         color: 0x3949AB,
     }))
-    currentLayer.add(currentLayer.lines)
+    currentLayer.extrusionLines.visible = options.extrusionLines
+    currentLayer.add(currentLayer.extrusionLines)
 }
 
 
