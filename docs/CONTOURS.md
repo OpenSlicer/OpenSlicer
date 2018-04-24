@@ -34,5 +34,29 @@ Let's consider a bit more complex geometry, the difference of two cuboids, and l
 
 This also shows why we ignore coplanar faces. All edges that we want in the contour will also be part of a non-coplanar triangle. (The edges of the triangle that we don't want in the resulting contour are exactly the edges that are shared with another coplanar triangle).
 
+There is a problem with this approach, however. Not always all of these segments will be part of the contour we want:
+
+<img width="700" alt="problem" src="https://user-images.githubusercontent.com/4309591/39153565-cb176d1a-474b-11e8-949f-c847661bd4be.png">
+
+In the mesh on the left the intersection is actually the full square. How can we solve this? Let's ask Bolzano. And let's solve this in 2D first and generalize for 3D later.
+
+If we want to slice this object we will at some point need to intersect the contour polygons with lines.
+Let's consider two very simple polygons:
+
+<img width="709" alt="screen shot 2018-04-23 at 23 51 28" src="https://user-images.githubusercontent.com/4309591/39155198-47313606-4751-11e8-937a-7ea4a5e9c488.png">
+
+Our objective here is to determine the intersection points (or, in case of a colinear segment, both of its vertices).
+With them we can then label the line with inside or outside segments.
+To do this we simply sort the intersection points and mark segments between odd and even vertices as "inside".
+We can see that for the green line there will be no problems.
+The **blue line**, in the left polygon, starting at the top, when it intersects the vertex we know that it will go from outside to inside because it has a segment on each side of it (that is, the cross product of the line with each of the segments have opposite direction). Next it will intersect another vertex, this time going from inside to outside of the shape. It will cross the polygon once more.
+
+The **red line** has some more trouble to it, since it contains a section where it is colinear with a segment. We consider colinear segments to always be part of the polygon. Since we're on the edge of a polygon, one side will be inside and the other will be outside. We can easily see which side is in by looking at the other segment that starts at the same vertex. For example, with our red line we are entering the polygon on the leftmost vertex, and the other segment goes to the right of our red line, so the polygon's inside will be on the right. It is impossible to be on the left of the segment because we would already be inside. When we arrive at our end vertex, since we know which side is inside, we can know whether we continue in the polygon or not.
+
+Notice how we did not need the normals of the polygon's segments. The same is true when we generalize to 3D. Going back to our cuboids from before, we can see that in the left one, when we intersect the plane and arrive at one of the faces of the outer contour, we will find that non-coplanar faces on the contour go down, so volume of the model is below the plane. (We can also know this because the normals of the faces points up). On the inner loop the faces go up, so we are still in the model, and the inner loop can be completely removed.
+
+All of this will work nicely with single or multiple non-intersecting valid 2-manifolds (and even with some non-manifolds, but those are beyond the scope of this document).
+
+
 
 
