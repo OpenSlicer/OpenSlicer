@@ -57,6 +57,9 @@ Notice how we did not need the normals of the polygon's segments. The same is tr
 
 All of this will work nicely with single or multiple non-intersecting valid 2-manifolds (and even with some non-manifolds, but those are beyond the scope of this document).
 
+## Other solutions
+
+All of this is easily avoided if we can use an [ultraMegaDirtyFix](https://github.com/lautr3k/SLAcer.js/commit/c4e5ce9c88f0a661f5cf4914238fba24228be78f) to avoid intersecting horizontal geometries at all.
 
 
 
