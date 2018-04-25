@@ -33,7 +33,8 @@ function compareLine3(l1, l2) {
 }
 
 function segment3Equals(l1, l2) {
-    return l1.equals(l2) || new THREE.Line3(l1.end, l1.start).equals(l2)
+    return l1.start.equals(l2.start) && l1.end.equals(l2.end) ||
+        l1.start.equals(l2.end) && l1.end.equals(l2.start)
 }
 
 
