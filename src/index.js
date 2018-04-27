@@ -21,8 +21,11 @@ let options = {
     normals: false,
     points: false,
 
+    rotation: {x: 0, y: 0, z: 0},
+    scale: {x: 0, y: 0, z: 0},
+
     // internal
-    epsilon: 1e-10 // in mm
+    epsilon: 1e-10, // in mm
 
 }
 let numLayers = 0
@@ -39,23 +42,40 @@ let axesHelper
 
 let currentLayer
 
+let objMatrix
+
 
 function loadMenu() {
-    controllers.currentLayerNumber = gui.add(options, 'currentLayerNumber', 0, 10000, 1).onChange(slice).name('Current Layer')
-    controllers.layerHeight = gui.add(options, 'layerHeight', 0.06, 10, 0.1).onChange(() => {
+
+    let slicing = gui.addFolder('Slicing Settings')
+    controllers.currentLayerNumber = slicing.add(options, 'currentLayerNumber', 0, 10000, 1).onChange(slice).name('Current Layer')
+    slicing.add(options, 'layerHeight', 0.06, 0.3, 0.01).onChange(() => {
+        controllers.currentLayerNumber.setValue(0)
         computeObjectHeight()
         slice()
     }).name('Layer Height')
-    controllers.nozzleSize = gui.add(options, 'nozzleSize', 0, 2, 0.1).onChange(slice).name('Nozzle diameter')
+
+    slicing.add(options, 'nozzleSize', 0, 2, 0.1).onChange(slice).name('Nozzle diameter')
+
+    let rotation = gui.addFolder('Rotation')
+    rotation.add(options.rotation, 'x').onChange(slice)
+    rotation.add(options.rotation, 'y').onChange(slice)
+    rotation.add(options.rotation, 'z').onChange(slice)
+
+    let scale = gui.addFolder('Scale')
+    scale.add(options.scale, 'x').onChange(slice)
+    scale.add(options.scale, 'y').onChange(slice)
+    scale.add(options.scale, 'z').onChange(slice)
 
     let debug = gui.addFolder('Debugging Options')
-    controllers.contours = debug.add(options, 'contours').onChange(updateDebugVisibility)
-    controllers.extrusionLines = debug.add(options, 'extrusionLines').onChange(updateDebugVisibility)
-    controllers.axesHelper = debug.add(options, 'axesHelper').onChange(updateDebugVisibility)
-    controllers.wireframe = debug.add(options, 'wireframe').onChange(updateDebugVisibility)
-    controllers.normals = debug.add(options, 'normals').onChange(updateDebugVisibility)
-    controllers.points = debug.add(options, 'points').onChange(updateDebugVisibility)
+    debug.add(options, 'contours').onChange(updateDebugVisibility)
+    debug.add(options, 'extrusionLines').onChange(updateDebugVisibility)
+    debug.add(options, 'axesHelper').onChange(updateDebugVisibility)
+    debug.add(options, 'wireframe').onChange(updateDebugVisibility)
+    debug.add(options, 'normals').onChange(updateDebugVisibility)
+    debug.add(options, 'points').onChange(updateDebugVisibility)
 
+    slicing.open()
 }
 
 function updateDebugVisibility() {
