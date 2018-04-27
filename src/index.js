@@ -122,7 +122,7 @@ function loadSTL(ev) {
 
 function computeObjectHeight() {
     objectHeight = new THREE.Box3().setFromObject(mainObj).getSize(new THREE.Vector3()).y
-    numLayers = Math.floor(objectHeight / options.layerHeight)
+    numLayers = Math.floor(objectHeight / options.layerHeight) - 1
     console.log("NumLayers", numLayers)
     controllers.currentLayerNumber.max(numLayers)
     controllers.currentLayerNumber.updateDisplay()
@@ -131,12 +131,6 @@ function computeObjectHeight() {
 
 function onObjectLoaded(geom) {
     geom.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-    geom.applyMatrix(new THREE.Matrix4().makeTranslation(0, -1e-12, 0))
-
-
-    // let manifold = Util.is2Manifold(mainGeom)
-    // if (!manifold) return
-
 
     let group = new THREE.Group()
     scene.add(group)
