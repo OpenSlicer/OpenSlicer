@@ -49,50 +49,10 @@ function cmpTriangle(t1, t2) {
 }
 
 
-function is2Manifold(geom) {
-    let t = new Timer()
-    let segs = []
-    let vs = []
-
-
-    geom.faces.forEach((f) => {
-        let t = new THREE.Triangle(geom.vertices[f.a], geom.vertices[f.b], geom.vertices[f.c])
-        // If two segments are equal this triangle is not even a triangle
-        // If the triangle is degenerate it is not a valid 2-manifold
-        if (t.getArea() === 0) {
-            console.log("degenerate face:", t)
-            return false
-        }
-
-
-        vs.push(t.a)
-        vs.push(t.b)
-        vs.push(t.c)
-
-        segs.push(new THREE.Line3(t.a, t.b))
-        segs.push(new THREE.Line3(t.b, t.c))
-        segs.push(new THREE.Line3(t.c, t.a))
-
-    })
-    t.tick("foreach")
-
-    segs.forEach(canonicalizeSegment)
-
-    segs = segs.sort(cmpCanonicalSegment).filter((x, i, a) => i === 0 || cmpCanonicalSegment(a[i - 1], x) !== 0)
-    t.tick("segs sort")
-    vs = vs.sort(cmpPoint).filter((x, i, a) => i === 0 || cmpPoint(a[i - 1], x) !== 0)
-    t.tick("vs sort")
-    let euler = vs.length + geom.faces.length - segs.length
-    console.log("vs", vs.length, "faces", geom.faces.length, "segs", segs.length, "euler:", euler)
-    return euler === 2
-}
-
-
 module.exports = {
     binarySearch: binarySearch,
     cmpPoint: cmpPoint,
     cmpCanonicalSegment: cmpCanonicalSegment,
     cmpTriangle: cmpTriangle,
-    is2Manifold: is2Manifold,
     canonicalizeSegment: canonicalizeSegment,
 }
