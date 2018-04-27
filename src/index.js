@@ -14,7 +14,6 @@ let options = {
     currentLayerNumber: 0,
     layerHeight: 0.2,
     nozzleSize: 0.4,
-    triangles: false,
     contours: true,
     extrusionLines: true,
     axesHelper: true,
@@ -42,40 +41,36 @@ let currentLayer
 
 
 function loadMenu() {
-    controllers.currentLayerNumber = gui.add(options, 'currentLayerNumber', 0, 10000, 1).onChange(() => {
-        slice()
-    })
+    controllers.currentLayerNumber = gui.add(options, 'currentLayerNumber', 0, 10000, 1).onChange(slice).name('Current Layer')
     controllers.layerHeight = gui.add(options, 'layerHeight', 0.06, 10, 0.1).onChange(() => {
         computeObjectHeight()
         slice()
-    })
-    controllers.nozzleSize = gui.add(options, 'nozzleSize', 0, 2, 0.1).onChange(() => {
-        slice()
-    })
-    controllers.triangles = gui.add(options, 'triangles').onChange(() => {
-        slice()
-    })
-    controllers.contours = gui.add(options, 'contours').onChange(() => {
-        slice()
-    })
-    controllers.extrusionLines = gui.add(options, 'extrusionLines').onChange((v) => {
-        currentLayer.extrusionLines.visible = v
-    })
-    controllers.axesHelper = gui.add(options, 'axesHelper').onChange((v) => {
-        axesHelper.visible = v
-    })
-    controllers.wireframe = gui.add(options, 'wireframe').onChange((v) => {
-        wireframeObj.visible = v
-        mainObj.visible = !v
-    })
-    controllers.normals = gui.add(options, 'normals').onChange((v) => {
-        normalsHelper.visible = v
-    })
-    controllers.points = gui.add(options, 'points').onChange((v) => {
-        currentLayer.points.visible = v
-    })
+    }).name('Layer Height')
+    controllers.nozzleSize = gui.add(options, 'nozzleSize', 0, 2, 0.1).onChange(slice).name('Nozzle diameter')
+
+    let debug = gui.addFolder('Debugging Options')
+    controllers.contours = debug.add(options, 'contours').onChange(updateDebugVisibility)
+    controllers.extrusionLines = debug.add(options, 'extrusionLines').onChange(updateDebugVisibility)
+    controllers.axesHelper = debug.add(options, 'axesHelper').onChange(updateDebugVisibility)
+    controllers.wireframe = debug.add(options, 'wireframe').onChange(updateDebugVisibility)
+    controllers.normals = debug.add(options, 'normals').onChange(updateDebugVisibility)
+    controllers.points = debug.add(options, 'points').onChange(updateDebugVisibility)
+
 }
 
+function updateDebugVisibility() {
+    mainObj.visible = !options.wireframe
+    wireframeObj.visible = options.wireframe
+    currentLayer.extrusionLines.visible = options.extrusionLines
+    normalsHelper.visible = options.normals
+    currentLayer.points.visible = options.points
+    currentLayer.contourLines.visible = options.contours
+    axesHelper.visible = options.axesHelper
+
+    currentLayer.extrusionLines.material.linewidth = (options.nozzleSize * 10) ^ 2 * 0.9
+    console.log("line width:", 0.9 * options.nozzleSize * 10)
+    currentLayer.extrusionLines.material.needsUpdate = true
+}
 
 loadMenu()
 
@@ -141,20 +136,19 @@ function onObjectLoaded(geom) {
     })
 
     mainObj = new THREE.Mesh(geom, mat)
-    mainObj.visible = !options.wireframe
     wireframeObj = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({
         color: 0x000000,
         transparent: true,
         wireframe: true,
         opacity: 0.8,
     }))
-    wireframeObj.visible = options.wireframe
 
 
     group.add(wireframeObj)
     group.add(mainObj)
 
     let bb = new THREE.Box3().setFromObject(mainObj)
+
     let radius = bb.max.clone().sub(bb.min).length() / 2
     let tmp = bb.max.clone().sub(bb.min)
     tmp.divideScalar(2)
@@ -178,7 +172,6 @@ function onObjectLoaded(geom) {
 
     let tmpMesh = new THREE.Mesh(mainGeom, new THREE.MeshBasicMaterial())
     normalsHelper = new THREE.FaceNormalsHelper(tmpMesh, bb.getSize(new THREE.Vector3()).length() / 20, 0x0000ff, 1)
-    normalsHelper.visible = options.normals
     group.add(normalsHelper)
 
 
@@ -202,6 +195,8 @@ function slice() {
     computeLayerTriangles()
     computeContours()
     computeLayerLines()
+
+    updateDebugVisibility()
 }
 
 // we avoid a lot of problems by ensuring that no vertices touch the slicing plane
@@ -322,16 +317,15 @@ function computeContours() {
 
     currentLayer.contourLines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
         color: 0xff0000,
+        linewidth: 6,
     }))
     currentLayer.add(currentLayer.contourLines)
-    currentLayer.contourLines.visible = options.contours
 
     currentLayer.points = new THREE.Points(geom, new THREE.PointsMaterial({
         color: 0xffff00,
         size: 0.5,
     }))
     currentLayer.add(currentLayer.points)
-    currentLayer.points.visible = options.points
 }
 
 function getCurrentLayerHeight() {
@@ -348,33 +342,36 @@ function computeLayerLines() {
         geom.vertices.push(l.end)
     }
 
+    let [d1, d2] = options.currentLayerNumber % 2 ? ['x', 'z'] : ['z', 'x']
+
+
     let bb = new THREE.Box3().setFromObject(currentLayer.contourLines)
 
-    let firstX = Math.ceil(bb.min.x / options.nozzleSize) * options.nozzleSize
+    let firstD = Math.ceil(bb.min[d1] / options.nozzleSize) * options.nozzleSize
 
     let segs = currentLayer.segments
     console.log("segs", segs)
 
-    for (let x = firstX; x < bb.max.x; x += options.nozzleSize) {
-        let vAt = (l) => l.at((x - l.start.x) / (l.end.x - l.start.x), new THREE.Vector3())
+    for (let x = firstD; x < bb.max[d1]; x += options.nozzleSize) {
+        let vAt = (l) => l.at((x - l.start[d1]) / (l.end[d1] - l.start[d1]), new THREE.Vector3())
         let is = []
         let lineIntersects = (a, b) => (a >= x && x >= b) || (b >= x && x >= a)
 
         // process segments to ensure we don't intersect them at a point
         for (let i = 0; i < segs.length; i++) {
-            if (segs[i].start.x === x) segs[i].start.x += options.epsilon
-            if (segs[i].end.x === x) segs[i].end.x += options.epsilon
+            if (segs[i].start[d1] === x) segs[i].start[d1] += options.epsilon * 3
+            if (segs[i].end[d1] === x) segs[i].end[d1] += options.epsilon * 3
         }
 
         segs.forEach((s) => {
-            if (lineIntersects(s.start.x, s.end.x)) is.push(s)
+            if (lineIntersects(s.start[d1], s.end[d1])) is.push(s)
         })
         let ordp = []
         for (let i = 0; i < is.length; i += 1) ordp.push(vAt(is[i]))
-        ordp.sort((a, b) => a.z - b.z)
+        ordp.sort((a, b) => a[d2] - b[d2])
         for (let i = 0; i < is.length; i = i + 2) {
             if (i < ordp.length - 1) {
-                if (ordp[i].z === ordp[i + 1].z) i += 1
+                if (ordp[i][d2] === ordp[i + 1][d2]) i += 1
                 makeLine(new THREE.Line3(ordp[i], ordp[i + 1]))
             }
         }
@@ -383,8 +380,9 @@ function computeLayerLines() {
     // intersect with lines
     currentLayer.extrusionLines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
         color: 0x3949AB,
+        linewidth: 1,
     }))
-    currentLayer.extrusionLines.visible = options.extrusionLines
+
     currentLayer.add(currentLayer.extrusionLines)
 }
 
