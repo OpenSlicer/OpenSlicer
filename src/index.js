@@ -10,6 +10,7 @@ let Util = require('./util')
 let gui = new dat.GUI()
 let controllers = {}
 let options = {
+    // controlled by menu
     currentLayerNumber: 0,
     layerHeight: 0.2,
     nozzleSize: 0.4,
@@ -19,6 +20,11 @@ let options = {
     axesHelper: true,
     wireframe: false,
     normals: false,
+    points: false,
+
+    // internal
+    epsilon: 1e-10 // in mm
+
 }
 let numLayers = 0
 let canvas = document.getElementById('canvas')
@@ -31,7 +37,6 @@ let mainGeom
 let timer
 let objectHeight
 let axesHelper
-
 
 let currentLayer
 
@@ -61,9 +66,13 @@ function loadMenu() {
     })
     controllers.wireframe = gui.add(options, 'wireframe').onChange((v) => {
         wireframeObj.visible = v
+        mainObj.visible = !v
     })
     controllers.normals = gui.add(options, 'normals').onChange((v) => {
         normalsHelper.visible = v
+    })
+    controllers.points = gui.add(options, 'points').onChange((v) => {
+        currentLayer.points.visible = v
     })
 }
 
@@ -104,6 +113,7 @@ function loadSTL(ev) {
         let buffer = ev.target.result
         let geom = loader.parse(buffer)
 
+
         onObjectLoaded(geom)
     }, false)
     reader.readAsArrayBuffer(file)
@@ -123,15 +133,21 @@ function onObjectLoaded(geom) {
     geom.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
     geom.applyMatrix(new THREE.Matrix4().makeTranslation(0, -1e-12, 0))
 
+
+    // let manifold = Util.is2Manifold(mainGeom)
+    // if (!manifold) return
+
+
     let group = new THREE.Group()
     scene.add(group)
     let mat = new THREE.MeshPhongMaterial({
         color: 0xffffff,
         transparent: true,
-        opacity: 0.2,
+        opacity: 0.5,
     })
 
     mainObj = new THREE.Mesh(geom, mat)
+    mainObj.visible = !options.wireframe
     wireframeObj = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({
         color: 0x000000,
         transparent: true,
@@ -150,7 +166,7 @@ function onObjectLoaded(geom) {
     tmp.divideScalar(2)
     tmp.multiplyScalar(-1)
     tmp.sub(bb.min)
-    let bbY = bb.getSize(new THREE.Vector3(0, 0, 0)).y / 2
+    let bbY = bb.getSize(new THREE.Vector3()).y / 2
     tmp.add(new THREE.Vector3(0, bbY, 0))
 
 
@@ -163,11 +179,11 @@ function onObjectLoaded(geom) {
 
     computeObjectHeight()
 
-    mainGeom = new THREE.Geometry().fromBufferGeometry(mainObj.geometry)
+    mainGeom = new THREE.Geometry().fromBufferGeometry(geom)
 
 
-    let t = new THREE.Mesh(mainGeom, new THREE.MeshBasicMaterial())
-    normalsHelper = new THREE.FaceNormalsHelper(t, 3, 0x0000ff, 1)
+    let tmpMesh = new THREE.Mesh(mainGeom, new THREE.MeshBasicMaterial())
+    normalsHelper = new THREE.FaceNormalsHelper(tmpMesh, bb.getSize(new THREE.Vector3()).length() / 20, 0x0000ff, 1)
     normalsHelper.visible = options.normals
     group.add(normalsHelper)
 
@@ -188,10 +204,22 @@ function slice() {
     currentLayer = new THREE.Group()
     scene.add(currentLayer)
 
-    computeLayerTriangles(options.triangles)
-    computeContours(options.contours)
-    computeLayerLines(options.extrusionLines)
+    ensureNoCoplanarVertices()
+    computeLayerTriangles()
+    computeContours()
+    computeLayerLines()
 }
+
+// we avoid a lot of problems by ensuring that no vertices touch the slicing plane
+function ensureNoCoplanarVertices() {
+    let h = getCurrentLayerHeight()
+    for (let i = 0; i < mainGeom.vertices.length; i++) {
+        let v = mainGeom.vertices[i]
+        if (v.y === h) v.y += options.epsilon
+        mainGeom.vertices[i] = v
+    }
+}
+
 
 function computeLayerTriangles(show) {
     timer = new Timer()
@@ -211,7 +239,7 @@ function computeLayerTriangles(show) {
     //let g = mainGeom
     timer.tick("Geometry clone")
 
-    let h = options.currentLayerNumber * options.layerHeight
+    let h = getCurrentLayerHeight()
     currentLayer.intersectionPlane = makePlane(h)
 
     let lineIntersects = (a, b) => (a > h && h > b) || (b > h && h > a)
@@ -238,8 +266,12 @@ function computeLayerTriangles(show) {
         currentLayer.add(currentLayer.layerTrianglesObject)
 }
 
+function Intersection(segment, faceIndex) {
+    this.segment = segment
+    this.faceIndex = faceIndex
+}
 
-function computeContours(show) {
+function computeContours() {
     currentLayer.segments = []
     let geom = new THREE.Geometry()
     let makeLine = (l) => {
@@ -248,20 +280,16 @@ function computeContours(show) {
         currentLayer.segments.push(l)
     }
     let triangles = currentLayer.layerTrianglesObject.geometry
-    let h = options.currentLayerNumber * options.layerHeight
+    let h = getCurrentLayerHeight()
 
     let isHorizontalFace = (vs) => vs[0].y === vs[1].y && vs[1].y === vs[2].y
     let lineIntersects = (a, b) => (a > h && h > b) || (b > h && h > a)
     let lineContained = (l) => l.start.y === l.end.y && l.end.y === h
+    let vAt = (l) => l.at((h - l.start.y) / (l.end.y - l.start.y), new THREE.Vector3())
 
     let out = []
-    let containedLines = []
-    let addContainedLine = (l) => {
-        containedLines.push()
-    }
 
-
-    triangles.faces.forEach((f) => {
+    triangles.faces.forEach((f, index) => {
         let vs = [triangles.vertices[f.a], triangles.vertices[f.b], triangles.vertices[f.c]]
         let ls = [
             new THREE.Line3(vs[0], vs[1]),
@@ -269,65 +297,57 @@ function computeContours(show) {
             new THREE.Line3(vs[2], vs[0]),
         ]
         if (isHorizontalFace(vs)) {
-            // ls.forEach((l) => {
-            // for (let i = 0; i < out.length; i++) {
-            //     if (!out[i].equals(l) &&
-            //         !out[i].equals(new THREE.Line3(l.end, l.start))) {
-            //         continue
-            //     }
-            //     out.splice(i, 1)
-            //     return
-            // }
-            // out.push(l)
-            // })
+            // we skip them, as there will be another triangle touching the plane with 2 points
+            return
         }
-        else { // face not contained in plane
-            let ils = []
-            ls.forEach((l, i) => {
-                if (lineIntersects(l.start.y, l.end.y))
-                    ils.push(i)
+        let ils = []
+        ls.forEach((l, i) => {
+            if (lineIntersects(l.start.y, l.end.y))
+                ils.push(i)
+        })
+        if (ils.length === 2) {
+            out.push(new THREE.Line3(vAt(ls[ils[0]]), vAt(ls[ils[1]])))
+        } else if (ils.length === 1) {
+            vs.forEach((v) => {
+                if (v.y === h)
+                    out.push(new THREE.Line3(vAt(ls[ils[0]]), v))
             })
-            let vAt = (l) => l.at((h - l.start.y) / (l.end.y - l.start.y), new THREE.Vector3())
-            if (ils.length === 2) {
-                out.push(new THREE.Line3(vAt(ls[ils[0]]), vAt(ls[ils[1]])))
-            } else if (ils.length === 1) {
-                vs.forEach((v) => {
-                    if (v.y === h)
-                        out.push(new THREE.Line3(vAt(ls[ils[0]]), v))
-                })
-            } else {
-                if (lineContained(ls[0]) || lineContained(ls[1]) || lineContained(ls[2])) {
-                    ls.forEach((l) => {
-                        if (lineContained(l)) {
-                            out.push(l)
-                        }
-                    })
+        } else {
+            ls.forEach((l) => {
+                if (lineContained(l)) {
+                    out.push(l)
                 }
-            }
+            })
         }
-
     })
 
-    out.forEach((l) => makeLine(l))
+    //console.log("out", out.length, out)
 
-    console.log("out", out.length, out)
+    out.forEach((l) => makeLine(l))
+    currentLayer.intersections = out
+
     currentLayer.contourLines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
         color: 0xff0000,
     }))
+    currentLayer.add(currentLayer.contourLines)
+    currentLayer.contourLines.visible = options.contours
 
+    currentLayer.points = new THREE.Points(geom, new THREE.PointsMaterial({
+        color: 0xffff00,
+        size: 0.5,
+    }))
+    currentLayer.add(currentLayer.points)
+    currentLayer.points.visible = options.points
+}
 
-    if (options.contours) {
-        currentLayer.add(currentLayer.contourLines)
-
-        currentLayer.boundingSquare = new THREE.BoxHelper(currentLayer.contourLines, 0x22ff22)
-        //currentLayer.add(currentLayer.boundingSquare)
-    }
+function getCurrentLayerHeight() {
+    let h = options.currentLayerNumber * options.layerHeight + options.layerHeight / 2
+    console.log("layer height", h)
+    return h
 }
 
 function computeLayerLines() {
-    let contours = currentLayer.contourLines.geometry
     let geom = new THREE.Geometry()
-    let h = options.currentLayerNumber * options.layerHeight
 
     let makeLine = (l) => {
         geom.vertices.push(l.start)
@@ -338,13 +358,21 @@ function computeLayerLines() {
 
     let firstX = Math.ceil(bb.min.x / options.nozzleSize) * options.nozzleSize
 
+    let segs = currentLayer.segments
+    console.log("segs", segs)
 
     for (let x = firstX; x < bb.max.x; x += options.nozzleSize) {
         let vAt = (l) => l.at((x - l.start.x) / (l.end.x - l.start.x), new THREE.Vector3())
-        //let line = new THREE.Line3(new THREE.Vector3(x, h, minz), new THREE.Vector3(x, h, maxz))
         let is = []
         let lineIntersects = (a, b) => (a >= x && x >= b) || (b >= x && x >= a)
-        currentLayer.segments.forEach((s) => {
+
+        // process segments to ensure we don't intersect them at a point
+        for (let i = 0; i < segs.length; i++) {
+            if (segs[i].start.x === x) segs[i].start.x += options.epsilon
+            if (segs[i].end.x === x) segs[i].end.x += options.epsilon
+        }
+
+        segs.forEach((s) => {
             if (lineIntersects(s.start.x, s.end.x)) is.push(s)
         })
         let ordp = []
@@ -358,9 +386,7 @@ function computeLayerLines() {
         }
     }
 
-
     // intersect with lines
-
     currentLayer.extrusionLines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
         color: 0x3949AB,
     }))
