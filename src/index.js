@@ -187,6 +187,7 @@ function onObjectLoaded() {
     group.add(normalsHelper)
 
     computeObjectHeight()
+    resetCamera(bb.max.clone().sub(bb.min).length() / 2)
 
 
     slice()
