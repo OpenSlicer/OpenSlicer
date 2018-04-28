@@ -186,6 +186,9 @@ function onObjectLoaded() {
     normalsHelper = new THREE.FaceNormalsHelper(mainObj, bb.getSize(new THREE.Vector3()).length() / 20, 0x0000ff, 1)
     group.add(normalsHelper)
 
+    computeObjectHeight()
+
+
     slice()
 }
 
@@ -276,10 +279,9 @@ function getMatrix() {
     let m = new THREE.Matrix4()
     m = m.premultiply(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
     m = m.premultiply(new THREE.Matrix4().makeScale(options.scale.x, options.scale.y, options.scale.y))
-    m = m.premultiply(new THREE.Matrix4().makeRotationX(options.rotation.x))
-    m = m.premultiply(new THREE.Matrix4().makeRotationY(options.rotation.y))
-    m = m.premultiply(new THREE.Matrix4().makeRotationZ(options.rotation.z))
-
+    m = m.premultiply(new THREE.Matrix4().makeRotationX(options.rotation.x / 180 * Math.PI))
+    m = m.premultiply(new THREE.Matrix4().makeRotationY(options.rotation.y / 180 * Math.PI))
+    m = m.premultiply(new THREE.Matrix4().makeRotationZ(options.rotation.z / 180 * Math.PI))
     return m
 }
 
