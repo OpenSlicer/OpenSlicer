@@ -278,10 +278,10 @@ function slice() {
 function getMatrix() {
     let m = new THREE.Matrix4()
     m = m.premultiply(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-    m = m.premultiply(new THREE.Matrix4().makeScale(options.scale.x, options.scale.y, options.scale.y))
     m = m.premultiply(new THREE.Matrix4().makeRotationX(options.rotation.x / 180 * Math.PI))
     m = m.premultiply(new THREE.Matrix4().makeRotationY(options.rotation.y / 180 * Math.PI))
     m = m.premultiply(new THREE.Matrix4().makeRotationZ(options.rotation.z / 180 * Math.PI))
+    m = m.premultiply(new THREE.Matrix4().makeScale(options.scale.x, options.scale.y, options.scale.z))
     return m
 }
 
