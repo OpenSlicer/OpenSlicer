@@ -7,7 +7,9 @@ let STLLoader = require('./vendor/STLLoader')
 let Timer = require('./timer')
 let Util = require('./util')
 
-let gui = new dat.GUI()
+let gui = new dat.GUI({
+    width: 400,
+})
 let controllers = {}
 let options = {
     // controlled by menu
@@ -22,7 +24,7 @@ let options = {
     points: false,
 
     rotation: {x: 0, y: 0, z: 0},
-    scale: {x: 0, y: 0, z: 0},
+    scale: {x: 1, y: 1, z: 1},
 
     // internal
     epsilon: 1e-10, // in mm
@@ -42,30 +44,37 @@ let axesHelper
 
 let currentLayer
 
+let originalGeom
 let objMatrix
 
 
 function loadMenu() {
 
-    let slicing = gui.addFolder('Slicing Settings')
-    controllers.currentLayerNumber = slicing.add(options, 'currentLayerNumber', 0, 10000, 1).onChange(slice).name('Current Layer')
-    slicing.add(options, 'layerHeight', 0.06, 0.3, 0.01).onChange(() => {
+    let general = gui.addFolder('General')
+    general.add({
+        loadFile: () => {
+            document.getElementById('fileinput').click()
+        }
+    }, 'loadFile').name('Load file')
+    controllers.currentLayerNumber = general.add(options, 'currentLayerNumber', 0, 10000, 1).onChange(slice).name('Current Layer')
+    general.add(options, 'layerHeight', 0.06, 0.3, 0.01).onChange(() => {
         controllers.currentLayerNumber.setValue(0)
         computeObjectHeight()
         slice()
     }).name('Layer Height')
 
-    slicing.add(options, 'nozzleSize', 0, 2, 0.1).onChange(slice).name('Nozzle diameter')
+    general.add(options, 'nozzleSize', 0, 2, 0.1).onChange(slice).name('Nozzle diameter')
 
-    let rotation = gui.addFolder('Rotation')
-    rotation.add(options.rotation, 'x').onChange(slice)
-    rotation.add(options.rotation, 'y').onChange(slice)
-    rotation.add(options.rotation, 'z').onChange(slice)
+    let transformations = gui.addFolder('Transformations')
+    let rotation = transformations.addFolder('Rotation')
+    rotation.add(options.rotation, 'x').onChange(onObjectLoaded)
+    rotation.add(options.rotation, 'y').onChange(onObjectLoaded)
+    rotation.add(options.rotation, 'z').onChange(onObjectLoaded)
 
-    let scale = gui.addFolder('Scale')
-    scale.add(options.scale, 'x').onChange(slice)
-    scale.add(options.scale, 'y').onChange(slice)
-    scale.add(options.scale, 'z').onChange(slice)
+    let scale = transformations.addFolder('Scale')
+    scale.add(options.scale, 'x').onChange(onObjectLoaded)
+    scale.add(options.scale, 'y').onChange(onObjectLoaded)
+    scale.add(options.scale, 'z').onChange(onObjectLoaded)
 
     let debug = gui.addFolder('Debugging Options')
     debug.add(options, 'contours').onChange(updateDebugVisibility)
@@ -75,7 +84,9 @@ function loadMenu() {
     debug.add(options, 'normals').onChange(updateDebugVisibility)
     debug.add(options, 'points').onChange(updateDebugVisibility)
 
-    slicing.open()
+    general.open()
+    scale.open()
+    rotation.open()
 }
 
 function updateDebugVisibility() {
@@ -88,7 +99,7 @@ function updateDebugVisibility() {
     axesHelper.visible = options.axesHelper
 
     currentLayer.extrusionLines.material.linewidth = (options.nozzleSize * 10) ^ 2 * 0.9
-    console.log("line width:", 0.9 * options.nozzleSize * 10)
+    //console.log("line width:", 0.9 * options.nozzleSize * 10)
     currentLayer.extrusionLines.material.needsUpdate = true
 }
 
@@ -109,27 +120,30 @@ document.addEventListener('dragover', ev => {
     ev.preventDefault()
 })
 
-document.addEventListener('drop', loadSTL, false)
-
-function loadSTL(ev) {
+document.addEventListener('drop', (ev) => {
     ev.stopPropagation()
     ev.preventDefault()
 
+    loadSTL(ev.dataTransfer.files)
+}, false)
+
+
+document.getElementById('fileinput').addEventListener('change', (ev) => {
+    console.log('ev', ev)
+    loadSTL(ev.target.files)
+})
+
+function loadSTL(files) {
     let loader = new STLLoader()
-
-    if (mainObj) cleanup()
-
-    if (ev.dataTransfer.files.length === 0) {
+    if (files.length === 0) {
         return
     }
-    let file = ev.dataTransfer.files[0]
+    let file = files[0]
     let reader = new FileReader()
     reader.addEventListener('load', ev => {
         let buffer = ev.target.result
-        let geom = loader.parse(buffer)
-
-
-        onObjectLoaded(geom)
+        originalGeom = loader.parse(buffer)
+        onObjectLoaded()
     }, false)
     reader.readAsArrayBuffer(file)
 }
@@ -142,9 +156,44 @@ function computeObjectHeight() {
     controllers.currentLayerNumber.max(numLayers)
     controllers.currentLayerNumber.updateDisplay()
 }
+function onObjectLoaded() {
+    if (mainObj) cleanup()
+
+    mainGeom = new THREE.Geometry().fromBufferGeometry(originalGeom)
+    mainGeom.applyMatrix(getMatrix())
 
 
-function onObjectLoaded(geom) {
+    let group = new THREE.Group()
+    scene.add(group)
+    mainObj = new THREE.Mesh(mainGeom, new THREE.MeshPhongMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.5,
+    }))
+
+    wireframeObj = new THREE.Mesh(mainGeom, new THREE.MeshBasicMaterial({
+        color: 0x000000,
+        transparent: true,
+        wireframe: true,
+        opacity: 0.8,
+    }))
+
+
+    group.add(wireframeObj)
+    group.add(mainObj)
+
+    let bb = new THREE.Box3().setFromObject(mainObj)
+    normalsHelper = new THREE.FaceNormalsHelper(mainObj, bb.getSize(new THREE.Vector3()).length() / 20, 0x0000ff, 1)
+    group.add(normalsHelper)
+
+    slice()
+}
+
+function onObjectLoaded2() {
+    if (mainObj) cleanup()
+
+    let geom = originalGeom.clone()
+    geom.applyMatrix(getMatrix())
     geom.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
 
     let group = new THREE.Group()
@@ -180,9 +229,10 @@ function onObjectLoaded(geom) {
 
     let bbb = boundingBox(bb, 0x0000ff, 0.2)
     group.add(bbb)
-    mainObj.geometry.applyMatrix(new THREE.Matrix4().makeTranslation(tmp.x, tmp.y, tmp.z))
+    geom.applyMatrix(new THREE.Matrix4().makeTranslation(tmp.x, tmp.y, tmp.z))
     bbb.translateOnAxis(new THREE.Vector3(0, 1, 0), bbY)
 
+    geom.needsUpdate = true
     resetCamera(radius)
 
     computeObjectHeight()
@@ -194,6 +244,7 @@ function onObjectLoaded(geom) {
     normalsHelper = new THREE.FaceNormalsHelper(tmpMesh, bb.getSize(new THREE.Vector3()).length() / 20, 0x0000ff, 1)
     group.add(normalsHelper)
 
+    objMatrix = group.matrix.clone()
 
     slice()
 }
@@ -202,6 +253,8 @@ function cleanup() {
     scene.remove(mainObj.parent)
 }
 
+
+// Slices a single layer of the mesh
 function slice() {
     if (mainObj === undefined) return
     if (currentLayer !== undefined) {
@@ -217,6 +270,17 @@ function slice() {
     computeLayerLines()
 
     updateDebugVisibility()
+}
+
+function getMatrix() {
+    let m = new THREE.Matrix4()
+    m = m.premultiply(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+    m = m.premultiply(new THREE.Matrix4().makeScale(options.scale.x, options.scale.y, options.scale.y))
+    m = m.premultiply(new THREE.Matrix4().makeRotationX(options.rotation.x))
+    m = m.premultiply(new THREE.Matrix4().makeRotationY(options.rotation.y))
+    m = m.premultiply(new THREE.Matrix4().makeRotationZ(options.rotation.z))
+
+    return m
 }
 
 // we avoid a lot of problems by ensuring that no vertices touch the slicing plane
