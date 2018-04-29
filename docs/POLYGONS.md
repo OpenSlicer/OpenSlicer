@@ -33,7 +33,7 @@ function polygons (V)
         
         while next is not poly[0]:
             seg = rightmost_segment(prev, next)
-            next = other_vertex(seg, prev)
+            next = other_vertex(seg, next)
             V.remove(seg)
             prev = next
             poly.push(next)
