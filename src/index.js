@@ -60,9 +60,10 @@ function loadMenu() {
             document.getElementById('fileinput').click()
         }
     }, 'loadFile').name('Load file')
-    general.add(options, 'loadUrl').onChange(() => {
-        loadUrl()
-    })
+    general.add(options, 'loadUrl').name("Url")
+    general.add({
+        loadUrl: loadUrl,
+    }, 'loadUrl').name('Load url')
     controllers.currentLayerNumber = general.add(options, 'currentLayerNumber', 0, 10000, 1).onChange(slice).name('Current Layer')
     general.add(options, 'layerHeight', 0.06, 0.3, 0.01).onChange(() => {
         controllers.currentLayerNumber.setValue(0)
@@ -169,6 +170,13 @@ function onObjectLoaded() {
 
     mainGeom = new THREE.Geometry().fromBufferGeometry(originalGeom)
     mainGeom.applyMatrix(getMatrix())
+    mainGeom.applyMatrix(function () {
+        mainGeom.computeBoundingBox()
+        let minY = mainGeom.boundingBox.min.y
+        let m = new THREE.Matrix4()
+        m = m.premultiply(new THREE.Matrix4().makeTranslation(0, -minY, 0))
+        return m
+    }())
 
 
     let group = new THREE.Group()
@@ -201,66 +209,6 @@ function onObjectLoaded() {
     slice()
 }
 
-function onObjectLoaded2() {
-    if (mainObj) cleanup()
-
-    let geom = originalGeom.clone()
-    geom.applyMatrix(getMatrix())
-    geom.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-
-    let group = new THREE.Group()
-    scene.add(group)
-    let mat = new THREE.MeshPhongMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.5,
-    })
-
-    mainObj = new THREE.Mesh(geom, mat)
-    wireframeObj = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({
-        color: 0x000000,
-        transparent: true,
-        wireframe: true,
-        opacity: 0.8,
-    }))
-
-
-    group.add(wireframeObj)
-    group.add(mainObj)
-
-    let bb = new THREE.Box3().setFromObject(mainObj)
-
-    let radius = bb.max.clone().sub(bb.min).length() / 2
-    let tmp = bb.max.clone().sub(bb.min)
-    tmp.divideScalar(2)
-    tmp.multiplyScalar(-1)
-    tmp.sub(bb.min)
-    let bbY = bb.getSize(new THREE.Vector3()).y / 2
-    tmp.add(new THREE.Vector3(0, bbY, 0))
-
-
-    let bbb = boundingBox(bb, 0x0000ff, 0.2)
-    group.add(bbb)
-    geom.applyMatrix(new THREE.Matrix4().makeTranslation(tmp.x, tmp.y, tmp.z))
-    bbb.translateOnAxis(new THREE.Vector3(0, 1, 0), bbY)
-
-    geom.needsUpdate = true
-    resetCamera(radius)
-
-    computeObjectHeight()
-
-    mainGeom = new THREE.Geometry().fromBufferGeometry(geom)
-
-
-    let tmpMesh = new THREE.Mesh(mainGeom, new THREE.MeshBasicMaterial())
-    normalsHelper = new THREE.FaceNormalsHelper(tmpMesh, bb.getSize(new THREE.Vector3()).length() / 20, 0x0000ff, 1)
-    group.add(normalsHelper)
-
-    objMatrix = group.matrix.clone()
-
-    slice()
-}
-
 function cleanup() {
     scene.remove(mainObj.parent)
 }
@@ -286,11 +234,13 @@ function slice() {
 
 function getMatrix() {
     let m = new THREE.Matrix4()
+
     m = m.premultiply(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
     m = m.premultiply(new THREE.Matrix4().makeRotationX(options.rotation.x / 180 * Math.PI))
     m = m.premultiply(new THREE.Matrix4().makeRotationY(options.rotation.y / 180 * Math.PI))
     m = m.premultiply(new THREE.Matrix4().makeRotationZ(options.rotation.z / 180 * Math.PI))
     m = m.premultiply(new THREE.Matrix4().makeScale(options.scale.x, options.scale.y, options.scale.z))
+
     return m
 }
 
@@ -572,8 +522,6 @@ function startAutoSlice() {
     options.currentLayerNumber = 0
     autoSlice = true
 }
-
-startAutoSlice()
 
 function onAutoSliceFinish() {
 
