@@ -160,7 +160,9 @@ function loadSTL(files) {
 
 
 function computeObjectHeight() {
-    objectHeight = new THREE.Box3().setFromObject(mainObj).getSize(new THREE.Vector3()).y
+    mainGeom.computeBoundingBox()
+    objectHeight = mainGeom.boundingBox.max.y - mainGeom.boundingBox.min.y
+    //objectHeight = new THREE.Box3().setFromObject(mainObj).getSize(new THREE.Vector3()).y
     numLayers = Math.floor(objectHeight / options.layerHeight) - 1
     controllers.currentLayerNumber.max(numLayers)
     controllers.currentLayerNumber.updateDisplay()
@@ -202,8 +204,8 @@ function onObjectLoaded() {
     normalsHelper = new THREE.FaceNormalsHelper(mainObj, bb.getSize(new THREE.Vector3()).length() / 20, 0x0000ff, 1)
     group.add(normalsHelper)
 
-    computeObjectHeight()
-    resetCamera(bb.max.clone().sub(bb.min).length() / 2)
+    mainGeom.computeBoundingSphere()
+    resetCamera(mainGeom.boundingSphere.radius * 3, mainGeom.boundingSphere.center)
 
 
     slice()
@@ -436,10 +438,16 @@ function boundingBox(bb, color, opacity) {
     return bbWireframe
 }
 
-function resetCamera(length) {
-    let pos = new THREE.Vector3(1, 1, 1).setLength(length * 3)
+function resetCamera(length, center) {
+    let pos = new THREE.Vector3(1, 1, 1).setLength(length)
     camera.position.copy(pos)
-    camera.lookAt(0, 0, 0)
+    if (center === undefined) {
+        controls.target.set(0, 0, 0)
+    } else {
+        console.log("looking at", center)
+        controls.target.copy(center)
+    }
+    controls.update()
 }
 
 
@@ -503,7 +511,7 @@ function init() {
 
     scene.background = new THREE.Texture
 
-    resetCamera(10)
+    resetCamera(30)
     updateLights()
 
     scene.add(camLight)
