@@ -13,4 +13,8 @@ Timer.prototype.tick = function tick(log) {
 }
 
 
+Timer.prototype.diff = function diff() {
+    return new Date().getTime() - this.lastTime
+}
+
 module.exports = Timer

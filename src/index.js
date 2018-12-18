@@ -5,7 +5,6 @@ let THREE = require('three')
 let OrbitControls = require('./vendor/OrbitControls')
 let STLLoader = require('./vendor/STLLoader')
 let Timer = require('./timer')
-let Util = require('./util')
 
 let gui = new dat.GUI({
     width: 400,
@@ -13,6 +12,7 @@ let gui = new dat.GUI({
 let controllers = {}
 let options = {
     // controlled by menu
+    loadUrl: getQueryParam('loadUrl') || "", // to load a STL from a link
     currentLayerNumber: 0,
     layerHeight: 0.2,
     nozzleSize: 0.4,
@@ -47,6 +47,10 @@ let currentLayer
 let originalGeom
 let objMatrix
 
+// When true, we will slice as fast as possible
+let autoSlice = false
+let autoSliceTimer
+
 
 function loadMenu() {
 
@@ -56,6 +60,9 @@ function loadMenu() {
             document.getElementById('fileinput').click()
         }
     }, 'loadFile').name('Load file')
+    general.add(options, 'loadUrl').onChange(() => {
+        loadUrl()
+    })
     controllers.currentLayerNumber = general.add(options, 'currentLayerNumber', 0, 10000, 1).onChange(slice).name('Current Layer')
     general.add(options, 'layerHeight', 0.06, 0.3, 0.01).onChange(() => {
         controllers.currentLayerNumber.setValue(0)
@@ -77,12 +84,13 @@ function loadMenu() {
     scale.add(options.scale, 'z').onChange(onObjectLoaded)
 
     let debug = gui.addFolder('Debugging Options')
-    debug.add(options, 'contours').onChange(updateDebugVisibility)
-    debug.add(options, 'extrusionLines').onChange(updateDebugVisibility)
+    debug.add(options, 'contours').onChange(slice)
+    debug.add(options, 'extrusionLines').onChange(slice)
+    debug.add(options, 'points').onChange(slice)
+
     debug.add(options, 'axesHelper').onChange(updateDebugVisibility)
     debug.add(options, 'wireframe').onChange(updateDebugVisibility)
     debug.add(options, 'normals').onChange(updateDebugVisibility)
-    debug.add(options, 'points').onChange(updateDebugVisibility)
 
     general.open()
     scale.open()
@@ -92,15 +100,16 @@ function loadMenu() {
 function updateDebugVisibility() {
     mainObj.visible = !options.wireframe
     wireframeObj.visible = options.wireframe
-    currentLayer.extrusionLines.visible = options.extrusionLines
     normalsHelper.visible = options.normals
-    currentLayer.points.visible = options.points
-    currentLayer.contourLines.visible = options.contours
     axesHelper.visible = options.axesHelper
 
-    currentLayer.extrusionLines.material.linewidth = (options.nozzleSize * 10) ^ 2 * 0.9
+    if (currentLayer.extrusionLines) currentLayer.extrusionLines.visible = options.extrusionLines
+    if (currentLayer.points) currentLayer.points.visible = options.points
+    if (currentLayer.contourLines) currentLayer.contourLines.visible = options.contours
+
+    if (currentLayer.extrusionLines) currentLayer.extrusionLines.material.linewidth = (options.nozzleSize * 10) ^ 2 * 0.9
     //console.log("line width:", 0.9 * options.nozzleSize * 10)
-    currentLayer.extrusionLines.material.needsUpdate = true
+    if (currentLayer.extrusionLines) currentLayer.extrusionLines.material.needsUpdate = true
 }
 
 loadMenu()
@@ -152,7 +161,6 @@ function loadSTL(files) {
 function computeObjectHeight() {
     objectHeight = new THREE.Box3().setFromObject(mainObj).getSize(new THREE.Vector3()).y
     numLayers = Math.floor(objectHeight / options.layerHeight) - 1
-    console.log("NumLayers", numLayers)
     controllers.currentLayerNumber.max(numLayers)
     controllers.currentLayerNumber.updateDisplay()
 }
@@ -307,14 +315,6 @@ function computeLayerTriangles(show) {
         opacity: 0.2,
     })
 
-    let plane = new THREE.Plane()
-
-    //scene.remove(currentLayer.layerTrianglesObject)
-
-    timer.tick("Clone")
-    //let g = mainGeom
-    timer.tick("Geometry clone")
-
     let h = getCurrentLayerHeight()
     currentLayer.intersectionPlane = makePlane(h)
 
@@ -332,9 +332,7 @@ function computeLayerTriangles(show) {
     }
     let g2 = new THREE.Geometry()
     g2.vertices = mainGeom.vertices
-    timer.tick("Before filter")
     g2.faces = mainGeom.faces.filter(keepFace)
-    timer.tick("After filter")
 
     currentLayer.layerTrianglesObject = new THREE.Mesh(g2, mat)
 
@@ -342,17 +340,14 @@ function computeLayerTriangles(show) {
         currentLayer.add(currentLayer.layerTrianglesObject)
 }
 
-function Intersection(segment, faceIndex) {
-    this.segment = segment
-    this.faceIndex = faceIndex
-}
-
 function computeContours() {
     currentLayer.segments = []
     let geom = new THREE.Geometry()
     let makeLine = (l) => {
+        //if (options.contours) {
         geom.vertices.push(l.start)
         geom.vertices.push(l.end)
+        //}
         currentLayer.segments.push(l)
     }
     let triangles = currentLayer.layerTrianglesObject.geometry
@@ -397,27 +392,31 @@ function computeContours() {
         }
     })
 
-    //console.log("out", out.length, out)
 
-    out.forEach((l) => makeLine(l))
-    currentLayer.intersections = out
+    if (options.contours || options.extrusionLines) {
+        out.forEach((l) => makeLine(l))
+    }
 
     currentLayer.contourLines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
         color: 0xff0000,
         linewidth: 6,
     }))
-    currentLayer.add(currentLayer.contourLines)
 
-    currentLayer.points = new THREE.Points(geom, new THREE.PointsMaterial({
-        color: 0xffff00,
-        size: 0.5,
-    }))
-    currentLayer.add(currentLayer.points)
+    if (options.contours) {
+        currentLayer.add(currentLayer.contourLines)
+    }
+
+    if (options.points) {
+        currentLayer.points = new THREE.Points(geom, new THREE.PointsMaterial({
+            color: 0xffff00,
+            size: 0.5,
+        }))
+        currentLayer.add(currentLayer.points)
+    }
 }
 
 function getCurrentLayerHeight() {
     let h = options.currentLayerNumber * options.layerHeight + options.layerHeight / 2
-    console.log("layer height", h)
     return h
 }
 
@@ -431,13 +430,11 @@ function computeLayerLines() {
 
     let [d1, d2] = options.currentLayerNumber % 2 ? ['x', 'z'] : ['z', 'x']
 
-
     let bb = new THREE.Box3().setFromObject(currentLayer.contourLines)
 
     let firstD = Math.ceil(bb.min[d1] / options.nozzleSize) * options.nozzleSize
 
     let segs = currentLayer.segments
-    console.log("segs", segs)
 
     for (let x = firstD; x < bb.max[d1]; x += options.nozzleSize) {
         let vAt = (l) => l.at((x - l.start[d1]) / (l.end[d1] - l.start[d1]), new THREE.Vector3())
@@ -463,14 +460,14 @@ function computeLayerLines() {
             }
         }
     }
-
-    // intersect with lines
     currentLayer.extrusionLines = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
         color: 0x3949AB,
         linewidth: 1,
     }))
 
-    currentLayer.add(currentLayer.extrusionLines)
+    if (options.extrusionLines) {
+        currentLayer.add(currentLayer.extrusionLines)
+    }
 }
 
 
@@ -564,6 +561,22 @@ function init() {
     axesHelper = new THREE.AxesHelper(500)
     scene.add(axesHelper)
     //showGround()
+
+
+    if (options.loadUrl !== "") {
+        loadUrl()
+    }
+}
+
+function startAutoSlice() {
+    options.currentLayerNumber = 0
+    autoSlice = true
+}
+
+startAutoSlice()
+
+function onAutoSliceFinish() {
+
 }
 
 function animate() {
@@ -571,7 +584,38 @@ function animate() {
     controls.update()
     camLight.position.copy(camera.position)
     renderer.render(scene, camera)
+
+    if (autoSlice && mainObj) {
+        if (options.currentLayerNumber === 0) {
+            autoSliceTimer = new Timer()
+        }
+        slice()
+        autoSliceTimer.tick("Layer " + options.currentLayerNumber)
+        controllers.currentLayerNumber.setValue(options.currentLayerNumber + 1)
+        if (options.currentLayerNumber >= numLayers) {
+            autoSlice = false
+            onAutoSliceFinish()
+        }
+    }
 }
 
-console.log("up", THREE.Object3D.DefaultUp)
+function loadUrl() {
+    const url = options.loadUrl
+
+    let loader = new STLLoader()
+
+    fetch(url, {})
+        .then(response => response.arrayBuffer())
+        .then(buf => {
+            originalGeom = loader.parse(buf)
+            onObjectLoaded()
+
+        })
+
+}
+
+function getQueryParam(param) {
+    return new URLSearchParams(window.location.search).get(param)
+}
+
 
