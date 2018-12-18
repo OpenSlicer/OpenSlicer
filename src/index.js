@@ -6,6 +6,10 @@ let OrbitControls = require('./vendor/OrbitControls')
 let STLLoader = require('./vendor/STLLoader')
 let Timer = require('./timer')
 
+
+let baseX = 200
+let baseY = 200
+
 let gui = new dat.GUI({
     width: 400,
 })
@@ -18,7 +22,7 @@ let options = {
     nozzleSize: 0.4,
     contours: true,
     extrusionLines: true,
-    axesHelper: true,
+    axesHelper: false,
     wireframe: false,
     normals: false,
     points: false,
@@ -162,7 +166,6 @@ function loadSTL(files) {
 function computeObjectHeight() {
     mainGeom.computeBoundingBox()
     objectHeight = mainGeom.boundingBox.max.y - mainGeom.boundingBox.min.y
-    //objectHeight = new THREE.Box3().setFromObject(mainObj).getSize(new THREE.Vector3()).y
     numLayers = Math.floor(objectHeight / options.layerHeight) - 1
     controllers.currentLayerNumber.max(numLayers)
     controllers.currentLayerNumber.updateDisplay()
@@ -174,9 +177,11 @@ function onObjectLoaded() {
     mainGeom.applyMatrix(getMatrix())
     mainGeom.applyMatrix(function () {
         mainGeom.computeBoundingBox()
+        let minX = mainGeom.boundingBox.min.x
         let minY = mainGeom.boundingBox.min.y
+        let minZ = mainGeom.boundingBox.min.z
         let m = new THREE.Matrix4()
-        m = m.premultiply(new THREE.Matrix4().makeTranslation(0, -minY, 0))
+        m = m.premultiply(new THREE.Matrix4().makeTranslation(-minX, -minY, -minZ))
         return m
     }())
 
@@ -205,7 +210,8 @@ function onObjectLoaded() {
     group.add(normalsHelper)
 
     mainGeom.computeBoundingSphere()
-    resetCamera(mainGeom.boundingSphere.radius * 3, mainGeom.boundingSphere.center)
+    computeObjectHeight()
+    resetCamera(mainGeom.boundingSphere.radius * 5, mainGeom.boundingSphere.center)
 
 
     slice()
@@ -440,11 +446,11 @@ function boundingBox(bb, color, opacity) {
 
 function resetCamera(length, center) {
     let pos = new THREE.Vector3(1, 1, 1).setLength(length)
-    camera.position.copy(pos)
+    controls.object.position.set(pos.x, pos.y, pos.z)
+    controls.update()
     if (center === undefined) {
         controls.target.set(0, 0, 0)
     } else {
-        console.log("looking at", center)
         controls.target.copy(center)
     }
     controls.update()
