@@ -55,11 +55,16 @@ The **red line** has some more trouble to it, since it contains a section where 
 
 Notice how we did not need the normals of the polygon's segments. The same is true when we generalize to 3D. Going back to our cuboids from before, we can see that in the left one, when we intersect the plane and arrive at one of the faces of the outer contour, we will find that non-coplanar faces on the contour go down, so volume of the model is below the plane. (We can also know this because the normals of the faces points up). On the inner loop the faces go up, so we are still in the model, and the inner loop can be completely removed.
 
-All of this will work nicely with single or multiple non-intersecting valid 2-manifolds (and even with some non-manifolds, but those are beyond the scope of this document).
+All of this will work nicely with valid 2-manifolds (and even with some non-manifolds, but since we also want some more robustness, we ended up using another approach:
 
-## Other solutions
+### Avoiding coplanar faces altogether
 
-All of this is easily avoided if we can use an [ultraMegaDirtyFix](https://github.com/lautr3k/SLAcer.js/commit/c4e5ce9c88f0a661f5cf4914238fba24228be78f) to avoid intersecting horizontal geometries at all.
+Since all our trouble starts with coplanar faces, we can use a simple trick to guarantee that we will never have them at all.
+When slicing at a height H, we take all vertices of the original geometry that are coplanar with H and move them up by a constant value epsilon. If we choose epsilon to be small enough (currently 1e-12), This will make the plane intersect with the edges so close to the vertex that the error would not be reproducible by any printer (and if 3D printers ever get to the microscopic level we can always increase floating point precision used to make epsilon even smaller).
+
+This will work but it is theoretically possible that moving vertices like this cause the mesh to become non-manifold, create a hole, or even make it self-intersect. In practice, however, since epsilon is negligible compared to the layer height, these issues dissapear because the next layer will be well above the problem.
+
+This is the approach we currently use, and comes with the benefit that it is much faster the previous approach.
 
 
 
