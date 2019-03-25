@@ -10,6 +10,7 @@
   "dependencies": {
     "dat.gui": "^0.7.1",
     "three": "^0.91.0",
+    "three-reflector": "^1.0.2",
     "webpack": "^4.5.0"
   },
   "devDependencies": {

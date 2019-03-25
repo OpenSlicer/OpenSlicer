@@ -24,11 +24,18 @@ const Viewer = class {
         this.data = {}
         // end class variables
 
+        this.scene.background = new THREE.Color(0xeeeeee)
+
+        this.scene.add(new THREE.AmbientLight(0x000000))
+
+        // add some lights
+        this.addPointLight(0, 200, 0)
+        this.addPointLight(100, 200, 100)
+        this.addPointLight(-100, -200, -100)
 
 
         this.renderer.setSize(window.innerWidth, window.innerHeight)
         document.body.appendChild(this.renderer.domElement)
-        this.scene.background = new THREE.Texture
         this.resetCamera(30)
         this.scene.add(this.camLight)
         this.scene.add(this.axesHelper)
@@ -40,6 +47,16 @@ const Viewer = class {
         }, false)
 
         this.animate()
+    }
+
+    addPointLight(x, y, z) {
+        let pointLight = new THREE.PointLight(0xffffff, 1.5, 0)
+        pointLight.position.set(x, y, z)
+        this.scene.add(pointLight)
+
+        // let sphereSize = 10
+        // let pointLightHelper = new THREE.PointLightHelper(pointLight, sphereSize, 0xff0000)
+        // this.scene.add(pointLightHelper)
     }
 
     resetCamera(length, center) {
@@ -56,7 +73,7 @@ const Viewer = class {
 
 
     animate() {
-        const self = this;
+        const self = this
         requestAnimationFrame((function () {
             self.animate()
         }))
@@ -69,6 +86,7 @@ const Viewer = class {
     isObjectShowing() {
         return this.data.group !== undefined
     }
+
     cleanup() {
         this.scene.remove(this.data.group)
         this.data = {}
@@ -81,7 +99,7 @@ const Viewer = class {
         this.data.geom = new THREE.Geometry().fromBufferGeometry(obj)
         // this.data.geom.applyMatrix(getMatrix())
 
-        let bboxToCenter = function(o) {
+        let bboxToCenter = function (o) {
             o.computeBoundingBox()
             let minX = o.boundingBox.min.x
             let minY = o.boundingBox.min.y
@@ -95,9 +113,12 @@ const Viewer = class {
 
         this.data.group = new THREE.Group()
         this.data.obj = new THREE.Mesh(this.data.geom, new THREE.MeshPhongMaterial({
-            color: 0xffffff,
+            color: 0x2194ce,
+            emissive: 0x0,
+            specular: 0x111111,
+            shininess: 30,
             transparent: true,
-            opacity: 0.5,
+            opacity: 1,
         }))
         this.data.group.add(this.data.obj)
         this.scene.add(this.data.group)
@@ -124,6 +145,32 @@ const Viewer = class {
         //slice()
     }
 
+    // updateVisibility(options) {
+    // mainObj.visible = !options.wireframe
+    // wireframeObj.visible = options.wireframe
+    // normalsHelper.visible = options.normals
+    // axesHelper.visible = options.axesHelper
+    //
+    // if (currentLayer.extrusionLines) currentLayer.extrusionLines.visible = options.extrusionLines
+    // if (currentLayer.points) currentLayer.points.visible = options.points
+    // if (currentLayer.contourLines) currentLayer.contourLines.visible = options.contours
+    //
+    // if (currentLayer.extrusionLines) currentLayer.extrusionLines.material.linewidth = (options.nozzleSize * 10) ^ 2 * 0.9
+    // //console.log("line width:", 0.9 * options.nozzleSize * 10)
+    // if (currentLayer.extrusionLines) currentLayer.extrusionLines.material.needsUpdate = true
+    // }
+
+    // function getMatrix() {
+    //     let m = new THREE.Matrix4()
+    //
+    //     m = m.premultiply(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+    //     m = m.premultiply(new THREE.Matrix4().makeRotationX(options.rotation.x / 180 * Math.PI))
+    //     m = m.premultiply(new THREE.Matrix4().makeRotationY(options.rotation.y / 180 * Math.PI))
+    //     m = m.premultiply(new THREE.Matrix4().makeRotationZ(options.rotation.z / 180 * Math.PI))
+    //     m = m.premultiply(new THREE.Matrix4().makeScale(options.scale.x, options.scale.y, options.scale.z))
+    //
+    //     return m
+    // }
 
 
 }

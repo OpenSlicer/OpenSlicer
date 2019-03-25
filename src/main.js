@@ -103,32 +103,17 @@ function loadMenu() {
     scale.add(options.scale, 'z').onChange()
 
     let debug = gui.addFolder('Debugging Options')
-    debug.add(options, 'contours').onChange(slice)
-    debug.add(options, 'extrusionLines').onChange(slice)
-    debug.add(options, 'points').onChange(slice)
+    debug.add(options, 'contours').onChange()
+    debug.add(options, 'extrusionLines').onChange()
+    debug.add(options, 'points').onChange()
 
-    debug.add(options, 'axesHelper').onChange(updateDebugVisibility)
-    debug.add(options, 'wireframe').onChange(updateDebugVisibility)
-    debug.add(options, 'normals').onChange(updateDebugVisibility)
+    debug.add(options, 'axesHelper').onChange()
+    debug.add(options, 'wireframe').onChange()
+    debug.add(options, 'normals').onChange()
 
     general.open()
     scale.open()
     rotation.open()
-}
-
-function updateDebugVisibility() {
-    mainObj.visible = !options.wireframe
-    wireframeObj.visible = options.wireframe
-    normalsHelper.visible = options.normals
-    axesHelper.visible = options.axesHelper
-
-    if (currentLayer.extrusionLines) currentLayer.extrusionLines.visible = options.extrusionLines
-    if (currentLayer.points) currentLayer.points.visible = options.points
-    if (currentLayer.contourLines) currentLayer.contourLines.visible = options.contours
-
-    if (currentLayer.extrusionLines) currentLayer.extrusionLines.material.linewidth = (options.nozzleSize * 10) ^ 2 * 0.9
-    //console.log("line width:", 0.9 * options.nozzleSize * 10)
-    if (currentLayer.extrusionLines) currentLayer.extrusionLines.material.needsUpdate = true
 }
 
 loadMenu()
@@ -164,17 +149,6 @@ function slice() {
     updateDebugVisibility()
 }
 
-function getMatrix() {
-    let m = new THREE.Matrix4()
-
-    m = m.premultiply(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-    m = m.premultiply(new THREE.Matrix4().makeRotationX(options.rotation.x / 180 * Math.PI))
-    m = m.premultiply(new THREE.Matrix4().makeRotationY(options.rotation.y / 180 * Math.PI))
-    m = m.premultiply(new THREE.Matrix4().makeRotationZ(options.rotation.z / 180 * Math.PI))
-    m = m.premultiply(new THREE.Matrix4().makeScale(options.scale.x, options.scale.y, options.scale.z))
-
-    return m
-}
 
 // we avoid a lot of problems by ensuring that no vertices touch the slicing plane
 function ensureNoCoplanarVertices() {
