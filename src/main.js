@@ -1,15 +1,29 @@
+// the new stuff
+import ObjectLoader from './objectloader'
+import Viewer from './viewer'
+
+const objectLoader = new ObjectLoader()
+const viewer = new Viewer({canvas: document.getElementById('canvas')})
+
+
+function main() {
+    objectLoader.on('objectLoaded', function (obj) {
+        console.log("main: object loaded", obj)
+        viewer.showObject(obj)
+    })
+
+}
+
+main()
+
+
+// the old stuff
 import './index.css'
 import dat from 'dat.gui'
-
-let THREE = require('three')
-let OrbitControls = require('./vendor/OrbitControls')
-let STLLoader = require('./vendor/STLLoader')
 let Timer = require('./timer')
 let util = require('./util')
+let THREE = require('three')
 
-
-let baseX = 200
-let baseY = 200
 
 let gui = new dat.GUI({
     width: 400,
@@ -38,7 +52,6 @@ let options = {
 let numLayers = 0
 let canvas = document.getElementById('canvas')
 let camera, scene, renderer, controls
-let camLight = new THREE.DirectionalLight(0xffffff, 0.75)
 let mainObj
 let wireframeObj
 let normalsHelper
@@ -80,14 +93,14 @@ function loadMenu() {
 
     let transformations = gui.addFolder('Transformations')
     let rotation = transformations.addFolder('Rotation')
-    rotation.add(options.rotation, 'x').onChange(onObjectLoaded)
-    rotation.add(options.rotation, 'y').onChange(onObjectLoaded)
-    rotation.add(options.rotation, 'z').onChange(onObjectLoaded)
+    rotation.add(options.rotation, 'x').onChange()
+    rotation.add(options.rotation, 'y').onChange()
+    rotation.add(options.rotation, 'z').onChange()
 
     let scale = transformations.addFolder('Scale')
-    scale.add(options.scale, 'x').onChange(onObjectLoaded)
-    scale.add(options.scale, 'y').onChange(onObjectLoaded)
-    scale.add(options.scale, 'z').onChange(onObjectLoaded)
+    scale.add(options.scale, 'x').onChange()
+    scale.add(options.scale, 'y').onChange()
+    scale.add(options.scale, 'z').onChange()
 
     let debug = gui.addFolder('Debugging Options')
     debug.add(options, 'contours').onChange(slice)
@@ -121,47 +134,6 @@ function updateDebugVisibility() {
 loadMenu()
 
 
-init()
-animate()
-
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight
-    camera.updateProjectionMatrix()
-    renderer.setSize(window.innerWidth, window.innerHeight)
-}, false)
-
-
-document.addEventListener('dragover', ev => {
-    ev.preventDefault()
-})
-
-document.addEventListener('drop', (ev) => {
-    ev.stopPropagation()
-    ev.preventDefault()
-
-    loadSTL(ev.dataTransfer.files)
-}, false)
-
-
-document.getElementById('fileinput').addEventListener('change', (ev) => {
-    console.log('ev', ev)
-    loadSTL(ev.target.files)
-})
-
-function loadSTL(files) {
-    let loader = new STLLoader()
-    if (files.length === 0) {
-        return
-    }
-    let file = files[0]
-    let reader = new FileReader()
-    reader.addEventListener('load', ev => {
-        let buffer = ev.target.result
-        originalGeom = loader.parse(buffer)
-        onObjectLoaded()
-    }, false)
-    reader.readAsArrayBuffer(file)
-}
 
 
 function computeObjectHeight() {
@@ -171,56 +143,7 @@ function computeObjectHeight() {
     controllers.currentLayerNumber.max(numLayers)
     controllers.currentLayerNumber.updateDisplay()
 }
-function onObjectLoaded() {
-    if (mainObj) cleanup()
 
-    mainGeom = new THREE.Geometry().fromBufferGeometry(originalGeom)
-    mainGeom.applyMatrix(getMatrix())
-    mainGeom.applyMatrix(function () {
-        mainGeom.computeBoundingBox()
-        let minX = mainGeom.boundingBox.min.x
-        let minY = mainGeom.boundingBox.min.y
-        let minZ = mainGeom.boundingBox.min.z
-        let m = new THREE.Matrix4()
-        m = m.premultiply(new THREE.Matrix4().makeTranslation(-minX, -minY, -minZ))
-        return m
-    }())
-
-
-    let group = new THREE.Group()
-    scene.add(group)
-    mainObj = new THREE.Mesh(mainGeom, new THREE.MeshPhongMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.5,
-    }))
-
-    wireframeObj = new THREE.Mesh(mainGeom, new THREE.MeshBasicMaterial({
-        color: 0x000000,
-        transparent: true,
-        wireframe: true,
-        opacity: 0.8,
-    }))
-
-
-    group.add(wireframeObj)
-    group.add(mainObj)
-
-    let bb = new THREE.Box3().setFromObject(mainObj)
-    normalsHelper = new THREE.FaceNormalsHelper(mainObj, bb.getSize(new THREE.Vector3()).length() / 20, 0x0000ff, 1)
-    group.add(normalsHelper)
-
-    mainGeom.computeBoundingSphere()
-    computeObjectHeight()
-    resetCamera(mainGeom.boundingSphere.radius * 5, mainGeom.boundingSphere.center)
-
-
-    slice()
-}
-
-function cleanup() {
-    scene.remove(mainObj.parent)
-}
 
 
 // Slices a single layer of the mesh
@@ -445,18 +368,6 @@ function boundingBox(bb, color, opacity) {
     return bbWireframe
 }
 
-function resetCamera(length, center) {
-    let pos = new THREE.Vector3(1, 1, 1).setLength(length)
-    controls.object.position.set(pos.x, pos.y, pos.z)
-    controls.update()
-    if (center === undefined) {
-        controls.target.set(0, 0, 0)
-    } else {
-        controls.target.copy(center)
-    }
-    controls.update()
-}
-
 
 function showGround() {
     scene.add(new THREE.GridHelper(500, 50))
@@ -493,73 +404,7 @@ function makePlane(h) {
 }
 
 
-function updateLights() {
-    let showLight = function showLight(x, y, z, i) {
-        let l = new THREE.DirectionalLight(0xffffff, i)
-        scene.add(l)
-        l.position.set(x, y, z)
-    }
-}
 
 
-function init() {
-    scene = new THREE.Scene()
-    renderer = new THREE.WebGLRenderer({
-        canvas: canvas,
-        antialias: true,
-        alpha: true
-    })
-    renderer.setSize(window.innerWidth, window.innerHeight)
-    document.body.appendChild(renderer.domElement)
-
-
-    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000)
-    controls = new OrbitControls(camera, canvas)
-
-    scene.background = new THREE.Texture
-
-    resetCamera(30)
-    updateLights()
-
-    scene.add(camLight)
-
-    axesHelper = new THREE.AxesHelper(500)
-    scene.add(axesHelper)
-    //showGround()
-
-
-    if (options.loadUrl !== "") {
-        loadUrl()
-    }
-}
-
-function startAutoSlice() {
-    options.currentLayerNumber = 0
-    autoSlice = true
-}
-
-function onAutoSliceFinish() {
-
-}
-
-function animate() {
-    requestAnimationFrame(animate)
-    controls.update()
-    camLight.position.copy(camera.position)
-    renderer.render(scene, camera)
-
-    if (autoSlice && mainObj) {
-        if (options.currentLayerNumber === 0) {
-            autoSliceTimer = new Timer()
-        }
-        slice()
-        autoSliceTimer.tick("Layer " + options.currentLayerNumber)
-        controllers.currentLayerNumber.setValue(options.currentLayerNumber + 1)
-        if (options.currentLayerNumber >= numLayers) {
-            autoSlice = false
-            onAutoSliceFinish()
-        }
-    }
-}
 
 

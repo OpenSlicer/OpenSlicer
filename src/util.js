@@ -48,6 +48,25 @@ function cmpTriangle(t1, t2) {
     return 0
 }
 
+function loadUrl() {
+    const url = options.loadUrl
+
+    let loader = new STLLoader()
+
+    fetch(url, {})
+        .then(response => response.arrayBuffer())
+        .then(buf => {
+            originalGeom = loader.parse(buf)
+            onObjectLoaded()
+
+        })
+
+}
+
+function getQueryParam(param) {
+    return new URLSearchParams(window.location.search).get(param)
+}
+
 
 module.exports = {
     binarySearch: binarySearch,
@@ -55,4 +74,6 @@ module.exports = {
     cmpCanonicalSegment: cmpCanonicalSegment,
     cmpTriangle: cmpTriangle,
     canonicalizeSegment: canonicalizeSegment,
+    getQueryParam: getQueryParam,
+    loadUrl: loadUrl,
 }
