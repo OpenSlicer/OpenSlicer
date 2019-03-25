@@ -19,7 +19,7 @@ const Viewer = class {
         this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000)
         this.controls = new OrbitControls(this.camera, this.canvas)
         this.camLight = new THREE.DirectionalLight(0xffffff, 0.75)
-        this.axesHelper = new THREE.AxesHelper(500)
+        this.axesHelper = new THREE.AxesHelper(125)
         // group that contains main object, wireframehelper, etc
         this.data = {}
         // end class variables
@@ -46,7 +46,20 @@ const Viewer = class {
             this.renderer.setSize(window.innerWidth, window.innerHeight)
         }, false)
 
+
+        this.testAddFloor()
+
         this.animate()
+    }
+
+    testAddFloor() {
+        const size = 300
+        const grid = new THREE.GridHelper(size, 80, 0xffffff, 0xffffff)
+        grid.position.y -= 0.5
+        grid.position.x += size/2
+        grid.position.z += size/2
+        this.scene.add(grid)
+
     }
 
     addPointLight(x, y, z) {
@@ -122,6 +135,13 @@ const Viewer = class {
         }))
         this.data.group.add(this.data.obj)
         this.scene.add(this.data.group)
+
+        // let mirror = this.data.group.clone()
+        // //mirror.scale = new THREE.Vector3(1,-1,1)
+        // mirror.scale.y = -1
+        //
+        // this.scene.add(mirror)
+
 
         // wireframeObj = new THREE.Mesh(this.data.geom, new THREE.MeshBasicMaterial({
         //     color: 0x000000,
