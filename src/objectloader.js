@@ -1,4 +1,5 @@
 const EventEmitter = require('events')
+const THREE = require('three')
 const STLLoader = require('./vendor/STLLoader')
 
 
@@ -37,6 +38,8 @@ let ObjectLoader = class extends EventEmitter {
         reader.addEventListener('load', ev => {
             let buffer = ev.target.result
             let geom = loader.parse(buffer)
+            geom.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+
             this.emit('objectLoaded', geom)
 
         }, false)

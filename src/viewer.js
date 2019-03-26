@@ -16,8 +16,10 @@ const Viewer = class {
             antialias: true,
             alpha: true
         })
-        this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000)
+        this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 5000)
         this.controls = new OrbitControls(this.camera, this.canvas)
+        this.controls.maxPolarAngle = Math.PI/2;
+
         this.camLight = new THREE.DirectionalLight(0xffffff, 0.75)
         this.axesHelper = new THREE.AxesHelper(125)
         // group that contains main object, wireframehelper, etc
@@ -48,16 +50,16 @@ const Viewer = class {
 
 
         this.testAddFloor()
-
+        this.makePlane(-0.5)
         this.animate()
     }
 
     testAddFloor() {
         const size = 300
         const grid = new THREE.GridHelper(size, 80, 0xffffff, 0xffffff)
-        grid.position.y -= 0.5
-        grid.position.x += size/2
-        grid.position.z += size/2
+        grid.position.y -= 0.1
+        grid.position.x += size / 2
+        grid.position.z += size / 2
         this.scene.add(grid)
 
     }
@@ -67,9 +69,9 @@ const Viewer = class {
         pointLight.position.set(x, y, z)
         this.scene.add(pointLight)
 
-        // let sphereSize = 10
-        // let pointLightHelper = new THREE.PointLightHelper(pointLight, sphereSize, 0xff0000)
-        // this.scene.add(pointLightHelper)
+        let sphereSize = 10
+        let pointLightHelper = new THREE.PointLightHelper(pointLight, sphereSize, 0xff0000)
+        this.scene.add(pointLightHelper)
     }
 
     resetCamera(length, center) {
@@ -102,6 +104,7 @@ const Viewer = class {
 
     cleanup() {
         this.scene.remove(this.data.group)
+        this.scene.remove(this.data.mirror)
         this.data = {}
     }
 
@@ -127,20 +130,16 @@ const Viewer = class {
         this.data.group = new THREE.Group()
         this.data.obj = new THREE.Mesh(this.data.geom, new THREE.MeshPhongMaterial({
             color: 0x2194ce,
-            emissive: 0x0,
             specular: 0x111111,
-            shininess: 30,
-            transparent: true,
-            opacity: 1,
+            side: THREE.DoubleSide,
+            shininess: 10,
         }))
         this.data.group.add(this.data.obj)
         this.scene.add(this.data.group)
 
-        // let mirror = this.data.group.clone()
-        // //mirror.scale = new THREE.Vector3(1,-1,1)
-        // mirror.scale.y = -1
-        //
-        // this.scene.add(mirror)
+        this.data.mirror = this.data.group.clone()
+        this.data.mirror.scale.y = -1
+        this.scene.add(this.data.mirror)
 
 
         // wireframeObj = new THREE.Mesh(this.data.geom, new THREE.MeshBasicMaterial({
@@ -191,6 +190,26 @@ const Viewer = class {
     //
     //     return m
     // }
+
+
+    makePlane(h, color) {
+        const size = 30000
+
+        let obj = new THREE.Mesh(
+            new THREE.PlaneGeometry(size, size),
+            new THREE.MeshBasicMaterial({
+                color: color || 0xcccccc,
+                transparent: true,
+                opacity: 0.5,
+                depthWrite: false,
+                //side: THREE.DoubleSide,
+            }))
+        obj.translateY(-h)
+
+        obj.rotateX(-Math.PI / 2)
+
+        this.scene.add(obj)
+    }
 
 
 }
