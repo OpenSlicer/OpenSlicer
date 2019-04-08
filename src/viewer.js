@@ -11,8 +11,11 @@ const Viewer = class {
         this.config = options.config
         this.config.on('matrixChange', () => {
             this.onMatrixChange()
-            console.log('matrix change', this.config.rotation)
         })
+        this.config.on('debugChange', () => {
+            this.onDebugChange()
+        })
+
         // class variables
         this.canvas = options.canvas
         this.scene = new THREE.Scene()
@@ -154,48 +157,18 @@ const Viewer = class {
         this.data.mirror.scale.y = -1
         this.scene.add(this.data.mirror)
 
-
-        // wireframeObj = new THREE.Mesh(this.data.geom, new THREE.MeshBasicMaterial({
-        //     color: 0x000000,
-        //     transparent: true,
-        //     wireframe: true,
-        //     opacity: 0.8,
-        // }))
-
-
-        // group.add(wireframeObj)
-
-        // let bb = new THREE.Box3().setFromObject(mainObj)
-        // normalsHelper = new THREE.FaceNormalsHelper(mainObj, bb.getSize(new THREE.Vector3()).length() / 20, 0x0000ff, 1)
-        // group.add(normalsHelper)
-        //
         this.data.geom.computeBoundingSphere()
-        // computeObjectHeight()
 
 
-        //slice()
+        // update visibility of wireframe, etc
+        this.onDebugChange()
     }
 
-    // updateVisibility(options) {
-    // mainObj.visible = !options.wireframe
-    // wireframeObj.visible = options.wireframe
-    // normalsHelper.visible = options.normals
-    // axesHelper.visible = options.axesHelper
-    //
-    // if (currentLayer.extrusionLines) currentLayer.extrusionLines.visible = options.extrusionLines
-    // if (currentLayer.points) currentLayer.points.visible = options.points
-    // if (currentLayer.contourLines) currentLayer.contourLines.visible = options.contours
-    //
-    // if (currentLayer.extrusionLines) currentLayer.extrusionLines.material.linewidth = (options.nozzleSize * 10) ^ 2 * 0.9
-    // //console.log("line width:", 0.9 * options.nozzleSize * 10)
-    // if (currentLayer.extrusionLines) currentLayer.extrusionLines.material.needsUpdate = true
-    // }
 
 
     getUserMatrix() {
         let m = new THREE.Matrix4()
 
-        //m = m.premultiply(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
         m = m.premultiply(new THREE.Matrix4().makeScale(this.config.scale.x, this.config.scale.y, this.config.scale.z))
 
         m = m.premultiply(new THREE.Matrix4().makeRotationX(this.config.rotation.x / 180 * Math.PI))
@@ -227,9 +200,18 @@ const Viewer = class {
 
 
     onMatrixChange() {
+        if (!this.isObjectRendered()) return
         // we are changing the rotation or scale, we will bake this in the final vertices, so we need to re-render
         // the object
         this.renderObject()
+    }
+
+    onDebugChange() {
+        if (!this.isObjectRendered()) return
+
+        this.data.mirror.visible = !this.config.wireframe
+        this.data.obj.material.wireframe = !!this.config.wireframe
+        this.axesHelper.visible = !!this.config.axesHelper
     }
 }
 
