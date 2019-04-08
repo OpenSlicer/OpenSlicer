@@ -43,6 +43,10 @@ class GUI extends EventEmitter {
         scale.add(this.config.scale, 'y').onChange(()=>{this.config.emit('matrixChange')})
         scale.add(this.config.scale, 'z').onChange(()=>{this.config.emit('matrixChange')})
 
+        let translation = transformations.addFolder('Translation')
+        translation.add(this.config.translation, 'x').onChange(()=>{this.config.emit('matrixChange')})
+        translation.add(this.config.translation, 'z').onChange(()=>{this.config.emit('matrixChange')})
+
         let debug = this.gui.addFolder('Debugging Options')
         debug.add(this.config, 'axesHelper').onChange(()=>{this.config.emit('debugChange')})
         debug.add(this.config, 'wireframe').onChange(()=>{this.config.emit('debugChange')})

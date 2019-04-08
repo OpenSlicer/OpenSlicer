@@ -126,7 +126,7 @@ const Viewer = class {
     renderObject() {
         if (this.isObjectRendered()) this.cleanupObject()
         this.data.geom = new THREE.Geometry().fromBufferGeometry(this.obj)
-        // this.data.geom.applyMatrix(getMatrix())
+
 
         let bboxToCenter = function (o) {
             o.computeBoundingBox()
@@ -137,10 +137,17 @@ const Viewer = class {
             m = m.premultiply(new THREE.Matrix4().makeTranslation(-minX, -minY, -minZ))
             return m
         }
+        // Matrix calculation
+        let m = new THREE.Matrix4()
+        m = m.premultiply(new THREE.Matrix4().makeScale(this.config.scale.x, this.config.scale.y, this.config.scale.z))
+        m = m.premultiply(new THREE.Matrix4().makeRotationX(this.config.rotation.x / 180 * Math.PI))
+        m = m.premultiply(new THREE.Matrix4().makeRotationY(this.config.rotation.y / 180 * Math.PI))
+        m = m.premultiply(new THREE.Matrix4().makeRotationZ(this.config.rotation.z / 180 * Math.PI))
+        this.data.geom.applyMatrix(m)
 
-
-        this.data.geom.applyMatrix(this.getUserMatrix())
-        this.data.geom.applyMatrix(bboxToCenter(this.data.geom))
+        m = bboxToCenter(this.data.geom)
+        m = m.premultiply(new THREE.Matrix4().makeTranslation(this.config.translation.x, 0, this.config.translation.z))
+        this.data.geom.applyMatrix(m)
 
 
         this.data.group = new THREE.Group()
@@ -162,20 +169,6 @@ const Viewer = class {
 
         // update visibility of wireframe, etc
         this.onDebugChange()
-    }
-
-
-
-    getUserMatrix() {
-        let m = new THREE.Matrix4()
-
-        m = m.premultiply(new THREE.Matrix4().makeScale(this.config.scale.x, this.config.scale.y, this.config.scale.z))
-
-        m = m.premultiply(new THREE.Matrix4().makeRotationX(this.config.rotation.x / 180 * Math.PI))
-        m = m.premultiply(new THREE.Matrix4().makeRotationY(this.config.rotation.y / 180 * Math.PI))
-        m = m.premultiply(new THREE.Matrix4().makeRotationZ(this.config.rotation.z / 180 * Math.PI))
-
-        return m
     }
 
 

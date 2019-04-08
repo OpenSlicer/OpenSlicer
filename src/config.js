@@ -21,6 +21,7 @@ class Config extends EventEmitter {
         // transformations
         this.rotation = {x: 0, y: 0, z: 0}
         this.scale = {x: 1, y: 1, z: 1}
+        this.translation = {x: 0, z: 0}
 
         // misc
         this.epsilon = 1e-10 // in mm
