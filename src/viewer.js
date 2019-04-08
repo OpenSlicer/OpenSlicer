@@ -8,6 +8,11 @@ const Viewer = class {
         console.log("Viewer constructor, options =", options)
         if (!options.canvas) throw new Error("Canvas element is mandatory")
 
+        this.config = options.config
+        this.config.on('matrixChange', () => {
+            this.onMatrixChange()
+            console.log('matrix change', this.config.rotation)
+        })
         // class variables
         this.canvas = options.canvas
         this.scene = new THREE.Scene()
@@ -18,7 +23,7 @@ const Viewer = class {
         })
         this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 5000)
         this.controls = new OrbitControls(this.camera, this.canvas)
-        this.controls.maxPolarAngle = Math.PI/2;
+        this.controls.maxPolarAngle = Math.PI / 2
 
         this.camLight = new THREE.DirectionalLight(0xffffff, 0.75)
         this.axesHelper = new THREE.AxesHelper(125)
@@ -31,10 +36,9 @@ const Viewer = class {
         this.scene.add(new THREE.AmbientLight(0x000000))
 
         // add some lights
-        this.addPointLight(0, 200, 0)
-        this.addPointLight(100, 200, 100)
+        this.addPointLight(50, 200, -100)
+        this.addPointLight(-0, 200, 200)
         this.addPointLight(-100, -200, -100)
-
 
         this.renderer.setSize(window.innerWidth, window.innerHeight)
         document.body.appendChild(this.renderer.domElement)
@@ -65,7 +69,7 @@ const Viewer = class {
     }
 
     addPointLight(x, y, z) {
-        let pointLight = new THREE.PointLight(0xffffff, 1.5, 0)
+        let pointLight = new THREE.PointLight(0xffffff, .7, 0)
         pointLight.position.set(x, y, z)
         this.scene.add(pointLight)
 
@@ -98,21 +102,27 @@ const Viewer = class {
     }
 
 
-    isObjectShowing() {
+    isObjectRendered() {
         return this.data.group !== undefined
     }
 
-    cleanup() {
+    cleanupObject() {
         this.scene.remove(this.data.group)
         this.scene.remove(this.data.mirror)
         this.data = {}
     }
 
-    showObject(obj) {
+    loadObject(obj) {
         console.log("viewer loading obj:", obj)
-        if (this.isObjectShowing()) this.cleanup()
+        this.obj = obj
 
-        this.data.geom = new THREE.Geometry().fromBufferGeometry(obj)
+        this.renderObject()
+        this.resetCamera(this.data.geom.boundingSphere.radius * 5, this.data.geom.boundingSphere.center)
+    }
+
+    renderObject() {
+        if (this.isObjectRendered()) this.cleanupObject()
+        this.data.geom = new THREE.Geometry().fromBufferGeometry(this.obj)
         // this.data.geom.applyMatrix(getMatrix())
 
         let bboxToCenter = function (o) {
@@ -124,6 +134,9 @@ const Viewer = class {
             m = m.premultiply(new THREE.Matrix4().makeTranslation(-minX, -minY, -minZ))
             return m
         }
+
+
+        this.data.geom.applyMatrix(this.getUserMatrix())
         this.data.geom.applyMatrix(bboxToCenter(this.data.geom))
 
 
@@ -158,7 +171,6 @@ const Viewer = class {
         //
         this.data.geom.computeBoundingSphere()
         // computeObjectHeight()
-        this.resetCamera(this.data.geom.boundingSphere.radius * 5, this.data.geom.boundingSphere.center)
 
 
         //slice()
@@ -179,17 +191,19 @@ const Viewer = class {
     // if (currentLayer.extrusionLines) currentLayer.extrusionLines.material.needsUpdate = true
     // }
 
-    // function getMatrix() {
-    //     let m = new THREE.Matrix4()
-    //
-    //     m = m.premultiply(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-    //     m = m.premultiply(new THREE.Matrix4().makeRotationX(options.rotation.x / 180 * Math.PI))
-    //     m = m.premultiply(new THREE.Matrix4().makeRotationY(options.rotation.y / 180 * Math.PI))
-    //     m = m.premultiply(new THREE.Matrix4().makeRotationZ(options.rotation.z / 180 * Math.PI))
-    //     m = m.premultiply(new THREE.Matrix4().makeScale(options.scale.x, options.scale.y, options.scale.z))
-    //
-    //     return m
-    // }
+
+    getUserMatrix() {
+        let m = new THREE.Matrix4()
+
+        //m = m.premultiply(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+        m = m.premultiply(new THREE.Matrix4().makeScale(this.config.scale.x, this.config.scale.y, this.config.scale.z))
+
+        m = m.premultiply(new THREE.Matrix4().makeRotationX(this.config.rotation.x / 180 * Math.PI))
+        m = m.premultiply(new THREE.Matrix4().makeRotationY(this.config.rotation.y / 180 * Math.PI))
+        m = m.premultiply(new THREE.Matrix4().makeRotationZ(this.config.rotation.z / 180 * Math.PI))
+
+        return m
+    }
 
 
     makePlane(h, color) {
@@ -212,6 +226,11 @@ const Viewer = class {
     }
 
 
+    onMatrixChange() {
+        // we are changing the rotation or scale, we will bake this in the final vertices, so we need to re-render
+        // the object
+        this.renderObject()
+    }
 }
 
 module.exports = Viewer

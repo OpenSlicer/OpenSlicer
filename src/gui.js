@@ -3,9 +3,9 @@ const EventEmitter = require('events')
 const util = require("./util")
 
 class GUI extends EventEmitter {
-    constructor(options) {
+    constructor(config) {
         super()
-        this.options = options
+        this.config = config
         this.initOptions()
 
         this.gui = new dat.GUI({
@@ -16,19 +16,19 @@ class GUI extends EventEmitter {
     }
 
     initOptions() {
-        this.options.loadUrl = util.getQueryParam('loadUrl') || ""
-        this.options.currentLayerNumber = 0
-        this.options.layerHeight = 0.2
-        this.options.nozzleSize = 0.4
-        this.options.contours = true
-        this.options.extrusionLines = true
-        this.options.axesHelper = false
-        this.options.wireframe = false
-        this.options.normals = false
-        this.options.points = false
+        this.config.loadUrl = util.getQueryParam('loadUrl') || ""
+        this.config.currentLayerNumber = 0
+        this.config.layerHeight = 0.2
+        this.config.nozzleSize = 0.4
+        this.config.contours = true
+        this.config.extrusionLines = true
+        this.config.axesHelper = false
+        this.config.wireframe = false
+        this.config.normals = false
+        this.config.points = false
 
-        this.options.rotation = {x: 0, y: 0, z: 0}
-        this.options.scale = {x: 1, y: 1, z: 1}
+        this.config.rotation = {x: 0, y: 0, z: 0}
+        this.config.scale = {x: 1, y: 1, z: 1}
 
         this.epsilon = 1e-10 // in mm
     }
@@ -40,36 +40,36 @@ class GUI extends EventEmitter {
                 document.getElementById('fileinput').click()
             }
         }, 'loadFile').name('Load file')
-        general.add(this.options, 'loadUrl').name("Url")
+        general.add(this.config, 'loadUrl').name("Url")
         general.add({
             loadUrl: util.loadUrl,
         }, 'loadUrl').name('Load url')
-        general.add(this.options, 'currentLayerNumber', 0, 10000, 1).name('Current Layer')
-        general.add(this.options, 'layerHeight', 0.06, 0.3, 0.01).onChange(() => {
+        general.add(this.config, 'currentLayerNumber', 0, 10000, 1).name('Current Layer')
+        general.add(this.config, 'layerHeight', 0.06, 0.3, 0.01).onChange(() => {
             controllers.currentLayerNumber.setValue(0)
         }).name('Layer Height')
 
-        general.add(this.options, 'nozzleSize', 0, 2, 0.1).name('Nozzle diameter')
+        general.add(this.config, 'nozzleSize', 0, 2, 0.1).name('Nozzle diameter')
 
         let transformations = this.gui.addFolder('Transformations')
         let rotation = transformations.addFolder('Rotation')
-        rotation.add(this.options.rotation, 'x')
-        rotation.add(this.options.rotation, 'y')
-        rotation.add(this.options.rotation, 'z')
+        rotation.add(this.config.rotation, 'x').onChange(()=>{this.config.emit('matrixChange')})
+        rotation.add(this.config.rotation, 'y').onChange(()=>{this.config.emit('matrixChange')})
+        rotation.add(this.config.rotation, 'z').onChange(()=>{this.config.emit('matrixChange')})
 
         let scale = transformations.addFolder('Scale')
-        scale.add(this.options.scale, 'x')
-        scale.add(this.options.scale, 'y')
-        scale.add(this.options.scale, 'z')
+        scale.add(this.config.scale, 'x').onChange(()=>{this.config.emit('matrixChange')})
+        scale.add(this.config.scale, 'y').onChange(()=>{this.config.emit('matrixChange')})
+        scale.add(this.config.scale, 'z').onChange(()=>{this.config.emit('matrixChange')})
 
         let debug = this.gui.addFolder('Debugging Options')
-        debug.add(this.options, 'contours')
-        debug.add(this.options, 'extrusionLines')
-        debug.add(this.options, 'points')
+        debug.add(this.config, 'contours')
+        debug.add(this.config, 'extrusionLines')
+        debug.add(this.config, 'points')
 
-        debug.add(this.options, 'axesHelper')
-        debug.add(this.options, 'wireframe')
-        debug.add(this.options, 'normals')
+        debug.add(this.config, 'axesHelper')
+        debug.add(this.config, 'wireframe')
+        debug.add(this.config, 'normals')
 
         general.open()
         scale.open()
