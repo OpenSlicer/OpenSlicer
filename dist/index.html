@@ -17,10 +17,6 @@
             user-select: none;
         }
 
-        .bg-light {
-            background-color: #f8f9facc !important;
-        }
-
         .dropdown-submenu {
             position: relative;
         }
@@ -38,6 +34,36 @@
             margin-left: .1rem;
             margin-right: .1rem;
         }
+
+        .rot90 {
+            transform: rotate(-90deg) translate(-100%, 0);
+            transform-origin: 0 0;
+        }
+
+        #layer-select-container {
+            display: none;
+            padding: .78em 1.5em;
+            position: absolute;
+            background-color: #343a4088 !important;
+            border-radius: 10em;
+            z-index: 50;
+            left: 1em;
+            top: 5em;
+        }
+
+        #canvas {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            border:2px solid red;
+        }
+
+        html, body {
+
+        }
+
     </style>
 </head>
 
@@ -137,10 +163,10 @@
                                     </div>
                                 </div>
                                 <!--<div class="form-group row mb-1">-->
-                                    <!--<label class="col-2 col-form-label">y</label>-->
-                                    <!--<div class="col-10">-->
-                                        <!--<input type="number" class="form-control" id="transform-transl-y" value="0">-->
-                                    <!--</div>-->
+                                <!--<label class="col-2 col-form-label">y</label>-->
+                                <!--<div class="col-10">-->
+                                <!--<input type="number" class="form-control" id="transform-transl-y" value="0">-->
+                                <!--</div>-->
                                 <!--</div>-->
                                 <div class="form-group row mb-1">
                                     <label class="col-2 col-form-label">z</label>
@@ -236,7 +262,6 @@
                     </form>
 
 
-
                 </div>
             </div>
         </ul>
@@ -248,6 +273,10 @@
 
 <canvas id="canvas" style="position:fixed; left:0;top:0"></canvas>
 
+
+<div id="layer-select-container" class="rot90">
+    <input type="range" class="custom-range" min="0" max="100" value="0" id="layer-select">
+</div>
 
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
         integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"

@@ -1,5 +1,6 @@
 const THREE = require('three')
 const OrbitControls = require('./vendor/OrbitControls')
+const $ = require('jquery')
 
 
 const Viewer = class {
@@ -133,6 +134,15 @@ const Viewer = class {
 
         this.renderObject()
         this.resetCamera(this.data.geom.boundingSphere.radius * 5, this.data.geom.boundingSphere.center)
+
+        let lsc = $('#layer-select-container')
+        lsc.width(($(window).height() - $('nav').height()*5))
+        lsc.hide().show(500)
+
+        let numLayers = Math.floor(this.data.geom.boundingBox.max.y /  this.config.layerHeight)
+
+        console.log("layer height = ", this.config.layerHeight, "object height =", this.data.geom.boundingBox.max.y, "numLayers", numLayers)
+        lsc.attr('max', numLayers)
     }
 
     renderObject() {

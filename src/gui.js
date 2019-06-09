@@ -13,6 +13,8 @@ class GUI extends EventEmitter {
 
         //this.loadMenu()
         this.loadBottomButtons()
+
+        this.loadLayerSelect()
     }
 
 
@@ -87,32 +89,67 @@ class GUI extends EventEmitter {
         })
 
         this.bindMenuButton('nav-reset-camera', () => this.config.emit('resetCamera'))
-        this.bindMenuText('transform-rot-x', (v) => { this.config.rotation.x = v; this.config.emit('matrixChange')})
-        this.bindMenuText('transform-rot-y', (v) => { this.config.rotation.y = v; this.config.emit('matrixChange')})
-        this.bindMenuText('transform-rot-z', (v) => { this.config.rotation.z = v; this.config.emit('matrixChange')})
-        this.bindMenuText('transform-transl-x', (v) => { this.config.translation.x = v; this.config.emit('matrixChange')})
-        this.bindMenuText('transform-transl-y', (v) => { this.config.translation.y = v; this.config.emit('matrixChange')})
-        this.bindMenuText('transform-transl-z', (v) => { this.config.translation.z = v; this.config.emit('matrixChange')})
-        this.bindMenuText('transform-scale-x', (v) => { this.config.scale.x = v; this.config.emit('matrixChange')})
-        this.bindMenuText('transform-scale-y', (v) => { this.config.scale.y = v; this.config.emit('matrixChange')})
-        this.bindMenuText('transform-scale-z', (v) => { this.config.scale.z = v; this.config.emit('matrixChange')})
+        this.bindMenuText('transform-rot-x', (v) => {
+            this.config.rotation.x = v
+            this.config.emit('matrixChange')
+        })
+        this.bindMenuText('transform-rot-y', (v) => {
+            this.config.rotation.y = v
+            this.config.emit('matrixChange')
+        })
+        this.bindMenuText('transform-rot-z', (v) => {
+            this.config.rotation.z = v
+            this.config.emit('matrixChange')
+        })
+        this.bindMenuText('transform-transl-x', (v) => {
+            this.config.translation.x = v
+            this.config.emit('matrixChange')
+        })
+        this.bindMenuText('transform-transl-y', (v) => {
+            this.config.translation.y = v
+            this.config.emit('matrixChange')
+        })
+        this.bindMenuText('transform-transl-z', (v) => {
+            this.config.translation.z = v
+            this.config.emit('matrixChange')
+        })
+        this.bindMenuText('transform-scale-x', (v) => {
+            this.config.scale.x = v
+            this.config.emit('matrixChange')
+        })
+        this.bindMenuText('transform-scale-y', (v) => {
+            this.config.scale.y = v
+            this.config.emit('matrixChange')
+        })
+        this.bindMenuText('transform-scale-z', (v) => {
+            this.config.scale.z = v
+            this.config.emit('matrixChange')
+        })
     }
 
     bindMenuText(id, cb) {
-        $('#'+id).on('change', function() {
+        $('#' + id).on('change', function () {
             let val = $(this).val()
             console.log('menuText:', id, "val:", val)
             if (cb) cb(val)
         })
     }
+
     bindMenuButton(id, cb) {
-        $('#'+id).on('click', function() {
+        $('#' + id).on('click', function () {
             console.log('menuButton:', id, "clicked")
             if (cb) cb()
         })
     }
 
 
+    loadLayerSelect() {
+        $(window).on('resize', () => {
+            let lsc = $('#layer-select-container')
+            lsc.width(($(window).height() - $('nav').height()*5))
+
+        })
+    }
 }
 
 
