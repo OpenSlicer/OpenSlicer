@@ -1,11 +1,282 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <style>
+        nav {
+            z-index: 100;
+        }
+
+        nav a, nav span {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        .bg-light {
+            background-color: #f8f9facc !important;
+        }
+
+        .dropdown-submenu {
+            position: relative;
+        }
+
+        .dropdown-submenu a::after {
+            transform: rotate(-90deg);
+            position: absolute;
+            right: .5em;
+            top: .8em;
+        }
+
+        .dropdown-submenu .dropdown-menu {
+            top: 0;
+            left: 100%;
+            margin-left: .1rem;
+            margin-right: .1rem;
+        }
+    </style>
 </head>
+
 <body>
+
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="#">OpenSlicer</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown"
+            aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNavDropdown">
+        <ul class="navbar-nav">
+            <!--<li class="nav-item active">-->
+            <!--<a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>-->
+            <!--</li>-->
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    File
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                    <li><a id="nav-open-file" class="dropdown-item" href="#">
+                        Open
+                    </a></li>
+                    <li><a class="dropdown-item" href="#">
+                        Export
+                    </a></li>
+                    <!--<li class="dropdown-submenu">-->
+                    <!--<a class="dropdown-item dropdown-toggle" href="#">Submenu</a>-->
+                    <!--<ul class="dropdown-menu">-->
+                    <!--<li><a class="dropdown-item" href="#">Submenu action</a></li>-->
+                    <!--<li><a class="dropdown-item" href="#">Another submenu action</a></li>-->
+
+
+                    <!--<li class="dropdown-submenu"><a class="dropdown-item dropdown-toggle"-->
+                    <!--href="#">Subsubmenu</a>-->
+                    <!--<ul class="dropdown-menu">-->
+                    <!--<li><a class="dropdown-item" href="#">Subsubmenu action</a></li>-->
+                    <!--<li><a class="dropdown-item" href="#">Another subsubmenu action</a></li>-->
+                    <!--</ul>-->
+                    <!--</li>-->
+                    <!--<li class="dropdown-submenu"><a class="dropdown-item dropdown-toggle" href="#">Second-->
+                    <!--subsubmenu</a>-->
+                    <!--<ul class="dropdown-menu">-->
+                    <!--<li><a class="dropdown-item" href="#">Subsubmenu action</a></li>-->
+                    <!--<li><a class="dropdown-item" href="#">Another subsubmenu action</a></li>-->
+                    <!--</ul>-->
+                    <!--</li>-->
+
+
+                    <!--</ul>-->
+                    <!--</li>-->
+                </ul>
+            </li>
+            <div class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Edit
+                </a>
+                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                    <a id="nav-reset-camera" class="dropdown-item" href="#">
+                        Reset camera
+                    </a>
+                    <li class="dropdown-submenu">
+                        <a class="dropdown-item dropdown-toggle" href="#">Rotate</a>
+                        <div class="dropdown-menu" style="min-width:15em;">
+                            <form class="px-4 py-3 mb-0">
+                                <div class="form-group row mb-1 mt-1">
+                                    <label class="col-2 col-form-label">x</label>
+                                    <div class="col-10">
+                                        <input type="number" class="form-control" id="transform-rot-x" value="0">
+                                    </div>
+                                </div>
+                                <div class="form-group row mb-1">
+                                    <label class="col-2 col-form-label">y</label>
+                                    <div class="col-10">
+                                        <input type="number" class="form-control" id="transform-rot-y" value="0">
+                                    </div>
+                                </div>
+                                <div class="form-group row mb-1">
+                                    <label class="col-2 col-form-label">z</label>
+                                    <div class="col-10">
+                                        <input type="number" class="form-control" id="transform-rot-z" value="0">
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </li>
+                    <li class="dropdown-submenu">
+                        <a class="dropdown-item dropdown-toggle" href="#">Translate</a>
+                        <div class="dropdown-menu" style="min-width:15em;">
+                            <form class="px-4 py-3 mb-0">
+                                <div class="form-group row mb-1 mt-1">
+                                    <label class="col-2 col-form-label">x</label>
+                                    <div class="col-10">
+                                        <input type="number" class="form-control" id="transform-transl-x" value="0">
+                                    </div>
+                                </div>
+                                <div class="form-group row mb-1">
+                                    <label class="col-2 col-form-label">y</label>
+                                    <div class="col-10">
+                                        <input type="number" class="form-control" id="transform-transl-y" value="0">
+                                    </div>
+                                </div>
+                                <div class="form-group row mb-1">
+                                    <label class="col-2 col-form-label">z</label>
+                                    <div class="col-10">
+                                        <input type="number" class="form-control" id="transform-transl-z" value="0">
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </li>
+                    <li class="dropdown-submenu">
+                        <a class="dropdown-item dropdown-toggle" href="#">Scale</a>
+                        <div class="dropdown-menu" style="min-width:15em;">
+                            <form class="px-4 py-3 mb-0">
+                                <div class="form-group row mb-1 mt-1">
+                                    <label class="col-2 col-form-label">x</label>
+                                    <div class="col-10">
+                                        <input type="number" class="form-control" id="transform-scale-x" value="1">
+                                    </div>
+                                </div>
+                                <div class="form-group row mb-1">
+                                    <label class="col-2 col-form-label">y</label>
+                                    <div class="col-10">
+                                        <input type="number" class="form-control" id="transform-scale-y" value="1">
+                                    </div>
+                                </div>
+                                <div class="form-group row mb-1">
+                                    <label class="col-2 col-form-label">z</label>
+                                    <div class="col-10">
+                                        <input type="number" class="form-control" id="transform-scale-z" value="1">
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </li>
+                </div>
+            </div>
+            <div class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Settings
+                </a>
+                <div class="dropdown-menu" style="min-width:25em" aria-labelledby="navbarDropdownMenuLink">
+                    <h6 class="dropdown-header">Current print</h6>
+                    <form class="py-1 mb-0 dropdown-item">
+                        <div class="form-group row mb-0">
+                            <span class="col-6 my-auto">Layer height</span>
+                            <input type="number" class="col-6 form-control form-control-sm" value="0.2">
+                        </div>
+                    </form>
+
+                    <form class="py-1 mb-0 dropdown-item">
+                        <div class="form-group row mb-0">
+                            <span class="col-6 my-auto">Temperature</span>
+                            <input type="number" class="col-6 form-control form-control-sm" value="200">
+                        </div>
+                    </form>
+
+                    <form class="py-1 mb-0 dropdown-item">
+                        <div class="form-group row mb-0">
+                            <span class="col-6 my-auto">Speed</span>
+                            <input type="number" class="col-6 form-control form-control-sm" value="200">
+                        </div>
+                    </form>
+                    <form class="py-1 mb-0 dropdown-item">
+                        <div class="form-group row mb-0">
+                            <span class="col-6 my-auto">Filament diameter</span>
+                            <input type="number" class="col-6 form-control form-control-sm" value="1.75">
+                        </div>
+                    </form>
+
+
+                    <div class="dropdown-divider"></div>
+
+                    <h6 class="dropdown-header">Printer setup</h6>
+
+                    <form class="py-1 mb-0 dropdown-item">
+                        <div class="form-group row mb-0">
+                            <span class="col-6 my-auto">Nozzle diameter</span>
+                            <input type="number" class="col-6 form-control form-control-sm" value="0.4">
+                        </div>
+                    </form>
+                    <form class="py-11 mb-0 dropdown-item">
+                        <div class="form-group row mb-0">
+                            <span class="col-6 my-auto">Bed size</span>
+
+                            <div class="col-3 pr-1 pl-0 m-0">
+                                <input type="number" class="form-control form-control-sm" value="200">
+                            </div>
+                            <div class="col-3 pr-0 pl-1 m-0">
+                                <input type="number" class="form-control form-control-sm" value="200">
+                            </div>
+                        </div>
+                    </form>
+
+
+
+                </div>
+            </div>
+        </ul>
+    </div>
+</nav>
+
+
 <input id="fileinput" type="file" style="visibility:hidden"/>
 
 <canvas id="canvas" style="position:fixed; left:0;top:0"></canvas>
+
+
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
+
+<script>
+    //    https://stackoverflow.com/a/45755948
+    $('.dropdown-menu a.dropdown-toggle').on('click', function (e) {
+        if (!$(this).next().hasClass('show')) {
+            $(this).parents('.dropdown-menu').first().find('.show').removeClass("show")
+        }
+        var $subMenu = $(this).next(".dropdown-menu")
+        $subMenu.toggleClass('show')
+
+
+        $(this).parents('li.nav-item.dropdown.show').on('hidden.bs.dropdown', function (e) {
+            $('.dropdown-submenu .show').removeClass("show")
+        })
+
+
+        return false
+    })
+</script>
 <script src="bundle.js"></script>
 </body>
 </html>

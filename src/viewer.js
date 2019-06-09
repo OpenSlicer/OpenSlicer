@@ -9,11 +9,17 @@ const Viewer = class {
         if (!options.canvas) throw new Error("Canvas element is mandatory")
 
         this.config = options.config
+        this.slicer = options.slicer
+
         this.config.on('matrixChange', () => {
             this.onMatrixChange()
         })
         this.config.on('debugChange', () => {
             this.onDebugChange()
+        })
+
+        this.config.on('resetCamera', () => {
+            this.resetCamera()
         })
 
         // class variables
@@ -82,7 +88,13 @@ const Viewer = class {
     }
 
     resetCamera(length, center) {
-        let pos = new THREE.Vector3(1, 1, 1).setLength(length)
+        if (!length && !this.isObjectRendered())
+            return
+        if (!length) {
+            length = this.data.geom.boundingSphere.radius * 5
+            center = this.data.geom.boundingSphere.center
+        }
+        let pos = new THREE.Vector3(1, 1, 1).setLength(length || 30)
         this.controls.object.position.set(pos.x, pos.y, pos.z)
         this.controls.update()
         if (center === undefined) {
@@ -125,7 +137,8 @@ const Viewer = class {
 
     renderObject() {
         if (this.isObjectRendered()) this.cleanupObject()
-        this.data.geom = new THREE.Geometry().fromBufferGeometry(this.obj)
+        //this.data.geom = new THREE.Geometry().fromBufferGeometry(this.obj)
+        this.data.geom = this.slicer.prepareGeometry(this.obj)
 
 
         let bboxToCenter = function (o) {

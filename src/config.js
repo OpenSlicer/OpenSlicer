@@ -24,7 +24,11 @@ class Config extends EventEmitter {
         this.translation = {x: 0, z: 0}
 
         // misc
-        this.epsilon = 1e-10 // in mm
+
+        // precision all STL objects will be rounded to. In decimal places of mm
+        this.precisionDecimals = 10
+        this.precision = Number('1e-' + this.precisionDecimals)
+        this.perturbation = this.precision / 100
     }
 }
 

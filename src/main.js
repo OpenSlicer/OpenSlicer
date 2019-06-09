@@ -2,13 +2,22 @@
 import ObjectLoader from './objectloader'
 import Viewer from './viewer'
 import Config from './config'
+import Slicer from './slicer'
 import GUI from './gui'
 
 
-let options = {}
 const objectLoader = new ObjectLoader()
 const config = new Config()
-const viewer = new Viewer({canvas: document.getElementById('canvas'), config: config})
+
+const slicer = new Slicer({
+    config: config,
+})
+
+const viewer = new Viewer({
+    canvas: document.getElementById('canvas'),
+    config: config,
+    slicer: slicer,
+})
 const gui = new GUI(config)
 
 

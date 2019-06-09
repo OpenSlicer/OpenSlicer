@@ -52,11 +52,6 @@ let currentLayer
 let originalGeom
 let objMatrix
 
-// When true, we will slice as fast as possible
-let autoSlice = false
-let autoSliceTimer
-
-
 function loadMenu() {
 
     let general = gui.addFolder('General')
