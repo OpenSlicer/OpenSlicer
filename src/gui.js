@@ -146,7 +146,7 @@ class GUI extends EventEmitter {
     loadLayerSelect() {
         $(window).on('resize', () => {
             let lsc = $('#layer-select-container')
-            lsc.width(($(window).height() - $('nav').height()*5))
+            lsc.width(($(window).height() - 60*3))
 
         })
     }

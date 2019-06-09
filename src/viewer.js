@@ -136,10 +136,11 @@ const Viewer = class {
         this.resetCamera(this.data.geom.boundingSphere.radius * 5, this.data.geom.boundingSphere.center)
 
         let lsc = $('#layer-select-container')
-        lsc.width(($(window).height() - $('nav').height()*5))
+        lsc.width(($(window).height() - 60 * 3))
+
         lsc.hide().show(500)
 
-        let numLayers = Math.floor(this.data.geom.boundingBox.max.y /  this.config.layerHeight)
+        let numLayers = Math.floor(this.data.geom.boundingBox.max.y / this.config.layerHeight)
 
         console.log("layer height = ", this.config.layerHeight, "object height =", this.data.geom.boundingBox.max.y, "numLayers", numLayers)
         lsc.attr('max', numLayers)
