@@ -37,11 +37,13 @@ let ObjectLoader = class extends EventEmitter {
         }
         let file = files[0]
         let reader = new FileReader()
+        let startTime = new Date().getTime()
         reader.addEventListener('load', ev => {
             let buffer = ev.target.result
             let geom = loader.parse(buffer)
             geom.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
 
+            console.log("Object load time", new Date().getTime() - startTime, "ms")
             this.emitter.emit('objectLoaded', geom)
 
         }, false)

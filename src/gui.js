@@ -52,6 +52,10 @@ class GUI extends EventEmitter {
             this.config.wireframe = v
             this.emitter.emit('viewChange')
         })
+        this.bindMenuCheckbox('nav-view-object', (v) => {
+            this.config.viewObject = v
+            this.emitter.emit('viewChange')
+        })
         this.bindMenuCheckbox('nav-view-axes', (v) => {
             this.config.axesHelper = v
             this.emitter.emit('viewChange')

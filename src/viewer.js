@@ -137,9 +137,12 @@ const Viewer = class {
     }
 
     renderObject() {
+        let startTime = new Date().getTime()
+
         if (this.isObjectRendered()) this.cleanupObject()
         //this.data.geom = new THREE.Geometry().fromBufferGeometry(this.obj)
         this.data.geom = this.slicer.prepareGeometry(this.obj)
+        console.log("RenderObject time A", new Date().getTime() - startTime, "ms")
 
 
         let bboxToCenter = function (o) {
@@ -151,6 +154,8 @@ const Viewer = class {
             m = m.premultiply(new THREE.Matrix4().makeTranslation(-minX, -minY, -minZ))
             return m
         }
+        console.log("RenderObject time B", new Date().getTime() - startTime, "ms")
+
         // Matrix calculation
         let m = new THREE.Matrix4()
         m = m.premultiply(new THREE.Matrix4().makeScale(this.config.scale.x, this.config.scale.y, this.config.scale.z))
@@ -159,10 +164,13 @@ const Viewer = class {
         m = m.premultiply(new THREE.Matrix4().makeRotationZ(this.config.rotation.z / 180 * Math.PI))
         this.data.geom.applyMatrix(m)
 
+        console.log("RenderObject time C", new Date().getTime() - startTime, "ms")
+
         m = bboxToCenter(this.data.geom)
         m = m.premultiply(new THREE.Matrix4().makeTranslation(this.config.translation.x, 0, this.config.translation.z))
         this.data.geom.applyMatrix(m)
 
+        console.log("RenderObject time D", new Date().getTime() - startTime, "ms")
 
         this.data.group = new THREE.Group()
         this.data.obj = new THREE.Mesh(this.data.geom, new THREE.MeshPhongMaterial({
@@ -174,6 +182,8 @@ const Viewer = class {
         this.data.group.add(this.data.obj)
         this.scene.add(this.data.group)
 
+        console.log("RenderObject time E", new Date().getTime() - startTime, "ms")
+
         this.data.mirror = this.data.group.clone()
         this.data.mirror.scale.y = -1
         this.scene.add(this.data.mirror)
@@ -181,8 +191,13 @@ const Viewer = class {
         this.data.geom.computeBoundingSphere()
 
 
+        console.log("RenderObject time F", new Date().getTime() - startTime, "ms")
+
         // update visibility of wireframe, etc
         this.onViewOptionsChanged()
+
+        console.log("RenderObject time", new Date().getTime() - startTime, "ms")
+
     }
 
 
@@ -216,7 +231,8 @@ const Viewer = class {
     onViewOptionsChanged() {
         if (!this.isObjectRendered()) return
 
-        this.data.mirror.visible = !this.config.wireframe
+        this.data.mirror.visible = !this.config.wireframe && this.config.viewObject
+        this.data.obj.visible = this.config.viewObject
         this.data.obj.material.wireframe = !!this.config.wireframe
         this.axesHelper.visible = !!this.config.axesHelper
     }

@@ -14,7 +14,9 @@ class Slicer {
 
     prepareGeometry(obj) {
         this.obj = obj
+        let startTime = new Date().getTime()
         let geom = new THREE.Geometry().fromBufferGeometry(this.obj)
+        console.log("Converting time:", new Date().getTime() - startTime, "ms")
         // Round all vertices to our finest resolution
         for (let i = 0; i < geom.vertices.length; i++) {
             geom.vertices[i].x = Number(geom.vertices[i].x).toFixed(this.config.precisionDecimals)

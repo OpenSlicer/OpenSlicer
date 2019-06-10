@@ -16,6 +16,7 @@ class Config {
         // debugging options
         this.axesHelper = true
         this.wireframe = false
+        this.viewObject = true
 
         // transformations
         this.rotation = {x: 0, y: 0, z: 0}
