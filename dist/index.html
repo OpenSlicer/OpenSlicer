@@ -10,7 +10,7 @@
             z-index: 100;
         }
 
-        nav a, nav span {
+        nav a, nav span, nav label {
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
@@ -92,41 +92,57 @@
                     <li><a class="dropdown-item" href="#">
                         Export
                     </a></li>
-                    <!--<li class="dropdown-submenu">-->
-                    <!--<a class="dropdown-item dropdown-toggle" href="#">Submenu</a>-->
-                    <!--<ul class="dropdown-menu">-->
-                    <!--<li><a class="dropdown-item" href="#">Submenu action</a></li>-->
-                    <!--<li><a class="dropdown-item" href="#">Another submenu action</a></li>-->
-
-
-                    <!--<li class="dropdown-submenu"><a class="dropdown-item dropdown-toggle"-->
-                    <!--href="#">Subsubmenu</a>-->
-                    <!--<ul class="dropdown-menu">-->
-                    <!--<li><a class="dropdown-item" href="#">Subsubmenu action</a></li>-->
-                    <!--<li><a class="dropdown-item" href="#">Another subsubmenu action</a></li>-->
-                    <!--</ul>-->
-                    <!--</li>-->
-                    <!--<li class="dropdown-submenu"><a class="dropdown-item dropdown-toggle" href="#">Second-->
-                    <!--subsubmenu</a>-->
-                    <!--<ul class="dropdown-menu">-->
-                    <!--<li><a class="dropdown-item" href="#">Subsubmenu action</a></li>-->
-                    <!--<li><a class="dropdown-item" href="#">Another subsubmenu action</a></li>-->
-                    <!--</ul>-->
-                    <!--</li>-->
-
-
-                    <!--</ul>-->
-                    <!--</li>-->
                 </ul>
             </li>
+            <div class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    View
+                </a>
+                <div class="dropdown-menu" style="min-width:15em;">
+                    <a id="nav-reset-camera" class="dropdown-item" href="#">
+                        Reset camera
+                    </a>
+                    <form class="mb-0 dropdown-item">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="nav-view-wireframe">
+                            <label class="custom-control-label" for="nav-view-wireframe">Wireframe</label>
+                        </div>
+                    </form>
+                    <form class="mb-0 dropdown-item">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="nav-view-axes">
+                            <label class="custom-control-label" for="nav-view-axes">Axes</label>
+                        </div>
+                    </form>
+
+                    <div class="dropdown-divider"></div>
+
+                    <h6 class="dropdown-header">Path types</h6>
+                    <form class="mb-0 dropdown-item">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="nav-view-perimeters">
+                            <label class="custom-control-label" for="nav-view-perimeters">Perimeters</label>
+                        </div>
+                    </form>
+                    <form class="mb-0 dropdown-item">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="nav-view-infill">
+                            <label class="custom-control-label" for="nav-view-infill">Infill</label>
+                        </div>
+                    </form>
+                    <form class="mb-0 dropdown-item">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="nav-view-solid">
+                            <label class="custom-control-label" for="nav-view-solid">Solid</label>
+                        </div>
+                    </form>
+                </div>
+            </div>
             <div class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Edit
                 </a>
                 <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-                    <a id="nav-reset-camera" class="dropdown-item" href="#">
-                        Reset camera
-                    </a>
                     <li class="dropdown-submenu">
                         <a class="dropdown-item dropdown-toggle" href="#">Rotate</a>
                         <div class="dropdown-menu" style="min-width:15em;">
@@ -162,12 +178,6 @@
                                         <input type="number" class="form-control" id="transform-transl-x" value="0">
                                     </div>
                                 </div>
-                                <!--<div class="form-group row mb-1">-->
-                                <!--<label class="col-2 col-form-label">y</label>-->
-                                <!--<div class="col-10">-->
-                                <!--<input type="number" class="form-control" id="transform-transl-y" value="0">-->
-                                <!--</div>-->
-                                <!--</div>-->
                                 <div class="form-group row mb-1">
                                     <label class="col-2 col-form-label">z</label>
                                     <div class="col-10">
@@ -260,8 +270,6 @@
                             </div>
                         </div>
                     </form>
-
-
                 </div>
             </div>
         </ul>
@@ -275,7 +283,7 @@
 
 
 <div id="layer-select-container" class="rot90">
-    <input type="range" class="custom-range" min="0" max="100" value="0" id="layer-select">
+    <input id="layer-select" type="range" class="custom-range" min="0" max="100" value="0" id="layer-select">
 </div>
 
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"

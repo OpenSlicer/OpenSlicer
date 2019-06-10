@@ -11,17 +11,12 @@ const Viewer = class {
 
         this.config = options.config
         this.slicer = options.slicer
+        this.emitter = options.emitter
 
-        this.config.on('matrixChange', () => {
-            this.onMatrixChange()
-        })
-        this.config.on('debugChange', () => {
-            this.onDebugChange()
-        })
-
-        this.config.on('resetCamera', () => {
-            this.resetCamera()
-        })
+        this.emitter.on('matrixChange', () => this.onMatrixChange())
+        this.emitter.on('viewChange', () => this.onViewOptionsChanged())
+        this.emitter.on('resetCamera', () => this.resetCamera())
+        this.emitter.on('layerSliceFinished', () => this.updateSlicePerimeters())
 
         // class variables
         this.canvas = options.canvas
@@ -135,15 +130,10 @@ const Viewer = class {
         this.renderObject()
         this.resetCamera(this.data.geom.boundingSphere.radius * 5, this.data.geom.boundingSphere.center)
 
-        let lsc = $('#layer-select-container')
-        lsc.width(($(window).height() - 60 * 3))
-
-        lsc.hide().show(500)
 
         let numLayers = Math.floor(this.data.geom.boundingBox.max.y / this.config.layerHeight)
-
         console.log("layer height = ", this.config.layerHeight, "object height =", this.data.geom.boundingBox.max.y, "numLayers", numLayers)
-        lsc.attr('max', numLayers)
+        this.emitter.emit('numLayersChanged', numLayers)
     }
 
     renderObject() {
@@ -192,7 +182,7 @@ const Viewer = class {
 
 
         // update visibility of wireframe, etc
-        this.onDebugChange()
+        this.onViewOptionsChanged()
     }
 
 
@@ -223,12 +213,37 @@ const Viewer = class {
         this.renderObject()
     }
 
-    onDebugChange() {
+    onViewOptionsChanged() {
         if (!this.isObjectRendered()) return
 
         this.data.mirror.visible = !this.config.wireframe
         this.data.obj.material.wireframe = !!this.config.wireframe
         this.axesHelper.visible = !!this.config.axesHelper
+    }
+
+    updateSlicePerimeters() {
+        if (!this.isObjectRendered()) return
+
+
+        if (this.data.perimeters) {
+            this.data.group.remove(this.data.perimeters)
+        }
+
+        let material = new THREE.LineBasicMaterial({
+            color: 0xff0000,
+            linewidth: 3,
+        })
+
+        let geometry = new THREE.Geometry()
+        for (let segment of this.slicer.segments) {
+            console.log("seg", segment)
+            geometry.vertices.push(segment.start)
+            geometry.vertices.push(segment.end)
+        }
+
+        this.data.perimeters = new THREE.LineSegments(geometry, material)
+        this.data.group.add(this.data.perimeters)
+
     }
 }
 

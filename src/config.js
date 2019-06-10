@@ -1,10 +1,9 @@
-const EventEmitter = require('events')
 const util = require("./util")
 
 
-class Config extends EventEmitter {
-    constructor() {
-        super()
+class Config {
+    constructor(options = {}) {
+        this.emitter = options.emitter
 
 
         this.loadUrl = util.getQueryParam('loadUrl') || ""
@@ -28,7 +27,7 @@ class Config extends EventEmitter {
         // precision all STL objects will be rounded to. In decimal places of mm
         this.precisionDecimals = 10
         this.precision = Number('1e-' + this.precisionDecimals)
-        this.perturbation = this.precision / 100
+        this.epsilon = this.precision / 100
     }
 }
 

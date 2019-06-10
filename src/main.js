@@ -4,25 +4,39 @@ import Viewer from './viewer'
 import Config from './config'
 import Slicer from './slicer'
 import GUI from './gui'
+import EventEmitter from 'events'
 
 
-const objectLoader = new ObjectLoader()
-const config = new Config()
+const emitter = new EventEmitter()
+
+const objectLoader = new ObjectLoader({
+    emitter: emitter,
+})
+
+const config = new Config({
+    emitter: emitter,
+})
 
 const slicer = new Slicer({
     config: config,
+    emitter: emitter,
 })
 
 const viewer = new Viewer({
     canvas: document.getElementById('canvas'),
-    config: config,
     slicer: slicer,
+    config: config,
+    emitter: emitter
 })
-const gui = new GUI(config)
+
+const gui = new GUI({
+    config: config,
+    emitter: emitter,
+})
 
 
 function main() {
-    objectLoader.on('objectLoaded', function (obj) {
+    emitter.on('objectLoaded', function (obj) {
         console.log("main: object loaded", obj)
         viewer.loadObject(obj)
     })

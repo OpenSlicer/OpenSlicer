@@ -8,6 +8,8 @@ let ObjectLoader = class extends EventEmitter {
     constructor(options = {}) {
         super()
 
+        this.emitter = options.emitter
+
         console.log("objectLoader constructor, options = ", options)
 
         document.addEventListener('dragover', ev => {
@@ -40,7 +42,7 @@ let ObjectLoader = class extends EventEmitter {
             let geom = loader.parse(buffer)
             geom.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
 
-            this.emit('objectLoaded', geom)
+            this.emitter.emit('objectLoaded', geom)
 
         }, false)
         reader.readAsArrayBuffer(file)
