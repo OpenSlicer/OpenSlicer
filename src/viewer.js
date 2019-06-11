@@ -90,9 +90,9 @@ const Viewer = class {
         pointLight.position.set(x, y, z)
         this.scene.add(pointLight)
 
-        let sphereSize = 10
-        let pointLightHelper = new THREE.PointLightHelper(pointLight, sphereSize, 0xff0000)
-        this.scene.add(pointLightHelper)
+        // let sphereSize = 10
+        // let pointLightHelper = new THREE.PointLightHelper(pointLight, sphereSize, 0xff0000)
+        // this.scene.add(pointLightHelper)
     }
 
     resetCamera(length, center) {
@@ -248,17 +248,14 @@ const Viewer = class {
         this.axesHelper.visible = !!this.config.axesHelper
 
 
-        if (this.data.lines) this.data.lines.visible = !!this.config.viewSolid
-        if (this.data.perimeters) {
-            this.data.perimeters.visible = !!this.config.viewPerimeters
-            this.data.perimeters.verticesNeedUpdate = true
-        }
-
+        if (this.data.solid) this.data.solid.visible = !!this.config.viewSolid
+        if (this.data.perimeters) this.data.perimeters.visible = !!this.config.viewPerimeters
     }
 
     showLayer(n) {
         this.updateLinesGroup('perimeters', this.slicer.perimeters[n], 0xff0000)
         this.updateLinesGroup('solid', this.slicer.solid[n], 0xffff00)
+        this.updateVisibilityConfig()
     }
 
     updateLinesGroup(obj, segs, color, randomizeColors = false) {
@@ -291,9 +288,6 @@ const Viewer = class {
 
         this.data[obj] = new THREE.LineSegments(geom, material)
         this.data.group.add(this.data[obj])
-
-        this.updateVisibilityConfig()
-
     }
 
 }
