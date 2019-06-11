@@ -8,12 +8,17 @@ class Slicer {
         this.emitter = options.emitter
 
 
-        this.emitter.on('currentLayerChange', (layerNumber) => this.sliceAt(layerNumber))
+        this.emitter.on('slice', () => this.slice())
+        this.emitter.on('sliceLayer', (l, n = true) => this.sliceLayer(l, n))
+        //this.emitter.on('currentLayerChange', (layerNumber) => this.sliceLayer( true))
     }
 
 
     prepareGeometry(obj) {
         this.obj = obj
+        this.perimeters = []
+        this.solid = []
+
         let startTime = new Date().getTime()
         let geom = new THREE.Geometry().fromBufferGeometry(this.obj)
         console.log("Converting time:", new Date().getTime() - startTime, "ms")
@@ -48,18 +53,32 @@ class Slicer {
 
     }
 
-    sliceAt(layer) {
-        if (!this.geom) throw new Error("No geometry prepared")
-        let h = layer * this.config.layerHeight + this.config.epsilon
+    slice() {
+        let startTime = new Date().getTime()
 
+        for (let i = 0; i < this.config.numLayers; i++) {
+            this.sliceLayer(i, false)
+        }
+        console.log("Total slicing time:", new Date().getTime() - startTime, "ms")
+
+        this.emitter.emit('sliceFinish')
+
+    }
+
+    sliceLayer(layer, notify = true) {
+        this.layer = layer
+        if (!this.geom) throw new Error("No geometry prepared")
+        let h = this.layer * this.config.layerHeight + this.config.epsilon
+        console.log(h)
+
+        console.log("slicing layer", this.layer)
         //this.geom.computeBoundingBox()
         //let maxY = this.geom.boundingBox.max.y
         //console.log("maxY", maxY, "layer", layer, "h=", h, "epsilon", this.config.epsilon)
 
-        this.segments = []
+        this.perimeters[this.layer] = []
 
         let plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -h)
-        console.log("geometry", this.geom)
 
         let line = new THREE.Line3()
         let target = new THREE.Vector3()
@@ -96,10 +115,60 @@ class Slicer {
                 intersectionVertices.push(v)
             }
             if (intersectionVertices.length === 2) {
-                this.segments.push(new THREE.Line3(intersectionVertices[0], intersectionVertices[1]))
+                this.perimeters[this.layer].push(new THREE.Line3(intersectionVertices[0], intersectionVertices[1]))
             }
         }
-        this.emitter.emit('layerSliceFinished')
+        if (notify) this.emitter.emit('layerPerimetersFinished')
+        this.getLayerLinesFromPerimeters(notify)
+    }
+
+    getLayerLinesFromPerimeters(notify = true) {
+        if (!this.geom) throw new Error("No geometry prepared")
+        if (!this.perimeters[this.layer]) throw new Error("No perimeters prepared")
+
+        this.solid[this.layer] = []
+
+        let axis = this.layer % 2 === 0 ? 'x' : 'z'
+        let otherAxis = this.layer % 2 === 0 ? 'z' : 'x'
+
+        let floorN = (x, n) => Math.floor(x / n) * n
+        let d = this.config.nozzleDiameter
+
+        let min = floorN(this.geom.boundingBox.min[axis] - d * 2, d)
+        let max = floorN(this.geom.boundingBox.max[axis] + d * 2, d)
+
+        let vs
+        let target = new THREE.Vector3()
+
+        //console.log("min max", min, max)
+        for (let pos = min; pos < max; pos += d) {
+            //console.log("plane pos", pos, axis)
+            let plane = new THREE.Plane(new THREE.Vector3(axis === 'x' ? -1 : 0, 0, axis === 'z' ? -1 : 0), pos)
+            //plane.constant = pos
+
+            vs = []
+            for (let seg of this.perimeters[this.layer]) {
+                let res = plane.intersectLine(seg, target)
+                if (res !== undefined) {
+                    let p = new THREE.Vector3()
+                    p.copy(target)
+                    vs.push(p)
+                }
+            }
+            // end of each plane, we have to make segments out of this
+            vs.sort((a, b) => a[otherAxis] - b[otherAxis])
+            if (vs.length > 0) {
+                //vs.forEach(p => this.emitter.emit('showPoint', p))
+                if (vs.length % 2 !== 0) console.warn("odd number of intersections")
+                else {
+                    for (let i = 0; i < vs.length; i += 2) {
+                        this.solid[this.layer].push(new THREE.Line3(vs[i], vs[i + 1]))
+                    }
+                }
+                //console.log(vs)
+            }
+        }
+        if (notify) this.emitter.emit('layerSolidFinished')
     }
 
 }

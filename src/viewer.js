@@ -14,10 +14,22 @@ const Viewer = class {
         this.emitter = options.emitter
 
         this.emitter.on('matrixChange', () => this.onMatrixChange())
-        this.emitter.on('viewChange', () => this.onViewOptionsChanged())
+        this.emitter.on('viewChange', () => this.updateVisibilityConfig())
         this.emitter.on('resetCamera', () => this.resetCamera())
-        this.emitter.on('layerSliceFinished', () => this.updateSlicePerimeters())
+        this.emitter.on('currentLayerChange', (layerNumber) => this.showLayer(layerNumber))
 
+        // this.emitter.on('layerPerimetersFinished',
+        //     () => this.updateLinesGroup('perimeters', this.slicer.perimeters[this.slicer.layer], 0xff0000))
+        // this.emitter.on('layerSolidFinished',
+        //     () => this.updateLinesGroup('solid', this.slicer.solid[this.slicer.layer], 0xffff00))
+
+        this.emitter.on('showPoint', (v) => {
+            let dotGeometry = new THREE.Geometry()
+            dotGeometry.vertices.push(v)
+            let dotMaterial = new THREE.PointsMaterial({size: 3, sizeAttenuation: false})
+            let dot = new THREE.Points(dotGeometry, dotMaterial)
+            this.scene.add(dot)
+        })
         // class variables
         this.canvas = options.canvas
         this.scene = new THREE.Scene()
@@ -131,9 +143,8 @@ const Viewer = class {
         this.resetCamera(this.data.geom.boundingSphere.radius * 5, this.data.geom.boundingSphere.center)
 
 
-        let numLayers = Math.floor(this.data.geom.boundingBox.max.y / this.config.layerHeight)
-        console.log("layer height = ", this.config.layerHeight, "object height =", this.data.geom.boundingBox.max.y, "numLayers", numLayers)
-        this.emitter.emit('numLayersChanged', numLayers)
+        this.config.numLayers = Math.floor(this.data.geom.boundingBox.max.y / this.config.layerHeight)
+        this.emitter.emit('numLayersChanged', this.config.numLayers)
     }
 
     renderObject() {
@@ -194,7 +205,7 @@ const Viewer = class {
         console.log("RenderObject time F", new Date().getTime() - startTime, "ms")
 
         // update visibility of wireframe, etc
-        this.onViewOptionsChanged()
+        this.updateVisibilityConfig()
 
         console.log("RenderObject time", new Date().getTime() - startTime, "ms")
 
@@ -228,39 +239,63 @@ const Viewer = class {
         this.renderObject()
     }
 
-    onViewOptionsChanged() {
+    updateVisibilityConfig() {
         if (!this.isObjectRendered()) return
 
         this.data.mirror.visible = !this.config.wireframe && this.config.viewObject
         this.data.obj.visible = this.config.viewObject
         this.data.obj.material.wireframe = !!this.config.wireframe
         this.axesHelper.visible = !!this.config.axesHelper
+
+
+        if (this.data.lines) this.data.lines.visible = !!this.config.viewSolid
+        if (this.data.perimeters) {
+            this.data.perimeters.visible = !!this.config.viewPerimeters
+            this.data.perimeters.verticesNeedUpdate = true
+        }
+
     }
 
-    updateSlicePerimeters() {
+    showLayer(n) {
+        this.updateLinesGroup('perimeters', this.slicer.perimeters[n], 0xff0000)
+        this.updateLinesGroup('solid', this.slicer.solid[n], 0xffff00)
+    }
+
+    updateLinesGroup(obj, segs, color, randomizeColors = false) {
         if (!this.isObjectRendered()) return
+        console.log("Updating lines group", obj)
 
-
-        if (this.data.perimeters) {
-            this.data.group.remove(this.data.perimeters)
+        let geom = new THREE.Geometry()
+        if (this.data[obj]) {
+            this.data.group.remove(this.data[obj])
+            //geom.colors = this.data[obj].geometry.colors
+            //geom.vertices = this.data[obj].geometry.vertices
         }
 
         let material = new THREE.LineBasicMaterial({
-            color: 0xff0000,
-            linewidth: 3,
+            color: randomizeColors ? 0xfffffff : color,
         })
-
-        let geometry = new THREE.Geometry()
-        for (let segment of this.slicer.segments) {
-            console.log("seg", segment)
-            geometry.vertices.push(segment.start)
-            geometry.vertices.push(segment.end)
+        if (randomizeColors) {
+            material.vertexColors = THREE.VertexColors
         }
 
-        this.data.perimeters = new THREE.LineSegments(geometry, material)
-        this.data.group.add(this.data.perimeters)
+        console.log('drawing', segs.length, 'lines')
+        for (let segment of segs) {
+            let c = new THREE.Color(Math.random(), Math.random(), Math.random())
+            geom.colors.push(c)
+            geom.colors.push(c)
+            geom.vertices.push(segment.start)
+            geom.vertices.push(segment.end)
+        }
+
+
+        this.data[obj] = new THREE.LineSegments(geom, material)
+        this.data.group.add(this.data[obj])
+
+        this.updateVisibilityConfig()
 
     }
+
 }
 
 module.exports = Viewer

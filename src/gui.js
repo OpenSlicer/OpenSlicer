@@ -29,22 +29,36 @@ class GUI extends EventEmitter {
             document.getElementById('fileinput').click()
         })
 
-        $('#nav-slice').on('click', function () {
+
+        this.emitter.on('objectLoaded', function (obj) {
+            $('#nav-btn-slice').parent().show(500)
         })
 
-        let emitter = this.emitter;
+        let emitter = this.emitter
+        $('#nav-btn-slice').on('click', () => {
+            emitter.emit('slice')
+        })
+
         $('#layer-select').on('input', function () {
             let val = $(this).val()
-            console.log('currentLayerChange', val)
             emitter.emit('currentLayerChange', val)
         })
 
-        this.emitter.on('numLayersChanged', (numLayers) => {
+        this.emitter.on('objectLoaded', () => {
+            let lsc = $('#layer-select-container')
+            lsc.hide()
+            $('#nav-btn-gcode').parent().hide()
+
+        })
+
+        this.emitter.on('sliceFinish', () => {
             let lsc = $('#layer-select-container')
             lsc.width(($(window).height() - 60 * 3))
-            lsc.hide().show(500)
+            lsc.show(500)
             let ls = $('#layer-select')
-            ls.attr('max', numLayers)
+            ls.attr('max', this.config.numLayers - 1)
+
+            $('#nav-btn-gcode').parent().show()
         })
 
         this.bindMenuButton('nav-reset-camera', () => this.emitter.emit('resetCamera'))
@@ -58,6 +72,18 @@ class GUI extends EventEmitter {
         })
         this.bindMenuCheckbox('nav-view-axes', (v) => {
             this.config.axesHelper = v
+            this.emitter.emit('viewChange')
+        })
+        this.bindMenuCheckbox('nav-view-perimeters', (v) => {
+            this.config.viewPerimeters = v
+            this.emitter.emit('viewChange')
+        })
+        this.bindMenuCheckbox('nav-view-infill', (v) => {
+            this.config.viewInfill = v
+            this.emitter.emit('viewChange')
+        })
+        this.bindMenuCheckbox('nav-view-solid', (v) => {
+            this.config.viewSolid = v
             this.emitter.emit('viewChange')
         })
 

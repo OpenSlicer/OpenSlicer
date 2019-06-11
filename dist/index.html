@@ -124,22 +124,22 @@
 
                     <div class="dropdown-divider"></div>
 
-                    <h6 class="dropdown-header">Path types</h6>
+                    <h6 class="dropdown-header">Current Layer</h6>
                     <form class="mb-0 dropdown-item">
                         <div class="custom-control custom-checkbox">
-                            <input type="checkbox" class="custom-control-input" id="nav-view-perimeters">
+                            <input checked type="checkbox" class="custom-control-input" id="nav-view-perimeters">
                             <label class="custom-control-label" for="nav-view-perimeters">Perimeters</label>
                         </div>
                     </form>
                     <form class="mb-0 dropdown-item">
                         <div class="custom-control custom-checkbox">
-                            <input type="checkbox" class="custom-control-input" id="nav-view-infill">
+                            <input checked type="checkbox" class="custom-control-input" id="nav-view-infill">
                             <label class="custom-control-label" for="nav-view-infill">Infill</label>
                         </div>
                     </form>
                     <form class="mb-0 dropdown-item">
                         <div class="custom-control custom-checkbox">
-                            <input type="checkbox" class="custom-control-input" id="nav-view-solid">
+                            <input checked type="checkbox" class="custom-control-input" id="nav-view-solid">
                             <label class="custom-control-label" for="nav-view-solid">Solid</label>
                         </div>
                     </form>
@@ -278,6 +278,12 @@
                         </div>
                     </form>
                 </div>
+            </div>
+            <div style="display:none" class="nav-item ml-3 my-auto">
+                <button id="nav-btn-slice" class="btn btn-success">Slice</button>
+            </div>
+            <div style="display:none" class="nav-item ml-3 my-auto">
+                <button id="nav-btn-gcode" class="btn btn-success">Generate G-code</button>
             </div>
         </ul>
     </div>

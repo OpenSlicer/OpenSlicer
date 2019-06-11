@@ -11,12 +11,15 @@ class Config {
         // print settings
         this.currentLayerNumber = 0
         this.layerHeight = 0.2
-        this.nozzleSize = 0.4
+        this.nozzleDiameter = 0.4
 
-        // debugging options
+        // debugging/view options
         this.axesHelper = true
         this.wireframe = false
         this.viewObject = true
+        this.viewPerimeters = true
+        this.viewSolid = true
+        this.viewInfill = true
 
         // transformations
         this.rotation = {x: 0, y: 0, z: 0}
@@ -29,6 +32,9 @@ class Config {
         this.precisionDecimals = 10
         this.precision = Number('1e-' + this.precisionDecimals)
         this.epsilon = this.precision / 100
+
+        // internal use
+        this.numLayers = 0
     }
 }
 
