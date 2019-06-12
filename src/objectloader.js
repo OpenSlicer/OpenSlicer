@@ -9,6 +9,7 @@ let ObjectLoader = class extends EventEmitter {
         super()
 
         this.emitter = options.emitter
+        this.config = options.config
 
         console.log("objectLoader constructor, options = ", options)
 
@@ -36,6 +37,7 @@ let ObjectLoader = class extends EventEmitter {
             return
         }
         let file = files[0]
+        console.log('file', file)
         let reader = new FileReader()
         let startTime = new Date().getTime()
         reader.addEventListener('load', ev => {
@@ -44,7 +46,8 @@ let ObjectLoader = class extends EventEmitter {
             geom.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
 
             console.log("Object load time", new Date().getTime() - startTime, "ms")
-            this.emitter.emit('objectLoaded', geom)
+            this.emitter.emit('objectLoaded', geom, file.name)
+            this.config.fileName = file.name
 
         }, false)
         reader.readAsArrayBuffer(file)

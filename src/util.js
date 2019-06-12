@@ -67,6 +67,21 @@ function getQueryParam(param) {
     return new URLSearchParams(window.location.search).get(param)
 }
 
+function download(filename, content) {
+    let blob = new Blob([content], {
+        type: 'text/plain'
+    })
+    const a = document.createElement('a')
+    document.body.appendChild(a)
+    const url = window.URL.createObjectURL(blob)
+    a.href = url
+    a.download = filename
+    a.click()
+    setTimeout(() => {
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+    }, 0)
+}
 
 module.exports = {
     binarySearch: binarySearch,
@@ -76,4 +91,5 @@ module.exports = {
     canonicalizeSegment: canonicalizeSegment,
     getQueryParam: getQueryParam,
     loadUrl: loadUrl,
+    download: download,
 }

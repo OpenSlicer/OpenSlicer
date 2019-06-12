@@ -5,6 +5,8 @@ class Config {
     constructor(options = {}) {
         this.emitter = options.emitter
 
+        this.fileName = "OpenSlicer"
+
 
         this.loadUrl = util.getQueryParam('loadUrl') || ""
 
@@ -12,6 +14,14 @@ class Config {
         this.currentLayerNumber = 0
         this.layerHeight = 0.2
         this.nozzleDiameter = 0.4
+        this.filamentDiameter = 1.75
+        this.extruderTemp = 240
+        this.bedTemp = 80
+        this.infillAngle = 45 // TODO implement this
+
+        // speeds
+        this.layerChangeSpeed = 12000
+        this.solidSpeed = 1800
 
         // debugging/view options
         this.axesHelper = true

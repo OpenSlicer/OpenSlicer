@@ -1,6 +1,5 @@
 const THREE = require('three')
 const OrbitControls = require('./vendor/OrbitControls')
-const $ = require('jquery')
 
 
 const Viewer = class {
@@ -29,6 +28,10 @@ const Viewer = class {
             let dotMaterial = new THREE.PointsMaterial({size: 3, sizeAttenuation: false})
             let dot = new THREE.Points(dotGeometry, dotMaterial)
             this.scene.add(dot)
+        })
+
+        this.emitter.on('showPlane', (p, s = 100) => {
+            this.scene.add(new THREE.PlaneHelper(p, s, 0xffff00))
         })
         // class variables
         this.canvas = options.canvas
@@ -208,7 +211,7 @@ const Viewer = class {
         this.updateVisibilityConfig()
 
         console.log("RenderObject time", new Date().getTime() - startTime, "ms")
-
+        this.emitter.emit('readyForSlice')
     }
 
 

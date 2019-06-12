@@ -30,13 +30,13 @@ class GUI extends EventEmitter {
         })
 
 
-        this.emitter.on('objectLoaded', function (obj) {
-            $('#nav-btn-slice').parent().show(500)
-        })
 
         let emitter = this.emitter
         $('#nav-btn-slice').on('click', () => {
             emitter.emit('slice')
+        })
+        $('#nav-btn-gcode').on('click', () => {
+            emitter.emit('generateGcode')
         })
 
         $('#layer-select').on('input', function () {
@@ -44,11 +44,11 @@ class GUI extends EventEmitter {
             emitter.emit('currentLayerChange', val)
         })
 
-        this.emitter.on('objectLoaded', () => {
+        this.emitter.on('readyForSlice', () => {
             let lsc = $('#layer-select-container')
             lsc.hide()
             $('#nav-btn-gcode').parent().hide()
-
+            $('#nav-btn-slice').parent().show(500)
         })
 
         this.emitter.on('sliceFinish', () => {
@@ -56,9 +56,13 @@ class GUI extends EventEmitter {
             lsc.width(($(window).height() - 60 * 3))
             lsc.show(500)
             let ls = $('#layer-select')
-            ls.attr('max', this.config.numLayers - 1)
+            ls.attr('max', this.config.numLayers - 1).val(1).trigger('input')
 
             $('#nav-btn-gcode').parent().show()
+            $('#nav-btn-slice').parent().hide()
+
+            $('#nav-view-wireframe').prop('checked', true).change()
+
         })
 
         this.bindMenuButton('nav-reset-camera', () => this.emitter.emit('resetCamera'))

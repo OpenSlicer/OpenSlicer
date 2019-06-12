@@ -9,11 +9,13 @@ import EventEmitter from 'events'
 
 const emitter = new EventEmitter()
 
-const objectLoader = new ObjectLoader({
+
+const config = new Config({
     emitter: emitter,
 })
 
-const config = new Config({
+const objectLoader = new ObjectLoader({
+    config: config,
     emitter: emitter,
 })
 

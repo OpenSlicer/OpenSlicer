@@ -1,4 +1,5 @@
 const THREE = require('three')
+const Gcode = require('./gcode')
 
 
 class Slicer {
@@ -9,6 +10,7 @@ class Slicer {
 
 
         this.emitter.on('slice', () => this.slice())
+        this.emitter.on('generateGcode', () => this.generateGcode())
         this.emitter.on('sliceLayer', (l, n = true) => this.sliceLayer(l, n))
         //this.emitter.on('currentLayerChange', (layerNumber) => this.sliceLayer( true))
     }
@@ -169,6 +171,53 @@ class Slicer {
             }
         }
         if (notify) this.emitter.emit('layerSolidFinished')
+    }
+
+    generateGcode() {
+        let gcode = new Gcode({
+            config: this.config
+        })
+        gcode.header()
+
+        let offset = 30
+        for (let i = 1; i < this.config.numLayers; i++) {
+            let h = this.config.layerHeight * i + 0.2 // initial layer height
+            gcode.layerChange({z: h})
+
+            // PERIMETERS
+            let j = 0
+            // for (let line of this.perimeters[i]) {
+            //     if (j%2===0) {
+            //         gcode.travelTo({x: line.start.x + offset, y: line.start.z + offset})
+            //         gcode.extrudeTo({x: line.end.x + offset, y: line.end.z + offset})
+            //     } else {
+            //         gcode.travelTo({x: line.end.x + offset, y: line.end.z + offset})
+            //         gcode.extrudeTo({x: line.start.x + offset, y: line.start.z + offset})
+            //     }
+            //     j++
+            // }
+
+            // SOLID INFILL
+            j = 0
+            for (let line of this.solid[i]) {
+                if (j % 2 === 0) {
+                    gcode.travelTo({x: line.start.x + offset, y: line.start.z + offset})
+                    gcode.extrudeTo({x: line.end.x + offset, y: line.end.z + offset, s: this.config.solidSpeed})
+                } else {
+                    gcode.travelTo({x: line.end.x + offset, y: line.end.z + offset})
+                    gcode.extrudeTo({x: line.start.x + offset, y: line.start.z + offset, s: this.config.solidSpeed})
+                }
+                j++
+            }
+        }
+
+
+        gcode.footer()
+        console.log("gcode", gcode.gcode)
+        let name = this.config.filename.split('.').slice(0, -1).join('.')
+        gcode.download(name + '.gcode')
+        this.gcode = gcode
+        return gcode
     }
 
 }
