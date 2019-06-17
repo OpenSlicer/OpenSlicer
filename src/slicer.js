@@ -73,12 +73,12 @@ class Slicer {
         let h = this.layer * this.config.layerHeight + this.config.epsilon
         console.log(h)
 
-        console.log("slicing layer", this.layer)
         //this.geom.computeBoundingBox()
         //let maxY = this.geom.boundingBox.max.y
         //console.log("maxY", maxY, "layer", layer, "h=", h, "epsilon", this.config.epsilon)
 
         this.perimeters[this.layer] = []
+        let currentLayerVertices = []
 
         let plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -h)
 
@@ -118,10 +118,28 @@ class Slicer {
             }
             if (intersectionVertices.length === 2) {
                 this.perimeters[this.layer].push(new THREE.Line3(intersectionVertices[0], intersectionVertices[1]))
+                currentLayerVertices.push(intersectionVertices[0])
+                currentLayerVertices.push(intersectionVertices[1])
             }
         }
+
+        //  sort vectors
+        currentLayerVertices.sort((u, v) => {
+            if (u.x !== v.x) return u.x - v.x
+            if (u.y !== v.y) return u.y - v.y
+            return u.z - v.z
+        })
+        // check if each point exists an even number of times
+        for (let i = 0; i < currentLayerVertices.length - 1; i += 2) {
+            if (!currentLayerVertices[i].equals(currentLayerVertices[i + 1])) {
+                console.warn("Intersection is not a closed path", currentLayerVertices, i, i+1)
+                break
+            }
+        }
+
+
         if (notify) this.emitter.emit('layerPerimetersFinished')
-        this.getLayerLinesFromPerimeters(notify)
+        //this.getLayerLinesFromPerimeters(notify)
     }
 
     getLayerLinesFromPerimeters(notify = true) {

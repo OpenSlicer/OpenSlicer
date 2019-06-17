@@ -43,7 +43,13 @@ class Config {
         this.precision = Number('1e-' + this.precisionDecimals)
         this.epsilon = this.precision / 100
 
-        // internal use
+
+
+        // internal use constants
+        // we use clipperMultiplier because clipper-lib only works with ints
+        this.clipperMultiplier = 100000
+
+        // internal use variables
         this.numLayers = 0
     }
 }

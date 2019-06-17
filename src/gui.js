@@ -11,12 +11,37 @@ class GUI extends EventEmitter {
 
         this.loadBottomButtons()
         this.loadLayerSelect()
+        this.loadKeyboardShortcuts()
+    }
+
+    loadKeyboardShortcuts() {
+        let shortcuts = {
+            "alt-o": () => $('#nav-open-file').trigger('click'),
+            "alt-e": () => $('#nav-btn-gcode').trigger('click'),
+            "alt-c": () => $('#nav-reset-camera').trigger('click'),
+            "alt-w": () => $('#nav-view-wireframe').trigger('click'),
+            "alt-a": () => $('#nav-view-axes').trigger('click'),
+            "alt-i": () => $('#nav-view-infill').trigger('click'),
+            "alt-v": () => $('#nav-view-object').trigger('click'),
+            "alt-p": () => $('#nav-view-perimeters').trigger('click'),
+            "alt-s": () => $('#nav-btn-slice').trigger('click'),
+        }
+
+
+        $(document).on('keyup', function (e) {
+            e = e.originalEvent
+            let key = String.fromCharCode(e.which).toLowerCase()
+            if (e.altKey && shortcuts['alt-' + key])
+                shortcuts['alt-' + key]()
+            if (e.ctrlKey && shortcuts['ctrl-' + key])
+                shortcuts['ctrl-' + key]()
+        })
+
     }
 
     loadBottomButtons() {
         // init checkbox behavior
         $('.custom-control.custom-checkbox').on('click', function (e) {
-            console.log('click test')
             if (e.target !== this)
                 return
 
@@ -28,7 +53,6 @@ class GUI extends EventEmitter {
         $('#nav-open-file').on('click', function () {
             document.getElementById('fileinput').click()
         })
-
 
 
         let emitter = this.emitter
@@ -132,7 +156,6 @@ class GUI extends EventEmitter {
     bindMenuText(id, cb) {
         $('#' + id).on('change', function () {
             let val = $(this).val()
-            console.log('menuText:', id, "val:", val)
             if (cb) cb(val)
         })
     }
@@ -140,14 +163,12 @@ class GUI extends EventEmitter {
     bindMenuCheckbox(id, cb) {
         $('#' + id).on('change', function () {
             let val = $(this).prop('checked')
-            console.log('menuCheckbox:', id, "val:", val)
             if (cb) cb(val)
         })
     }
 
     bindMenuButton(id, cb) {
         $('#' + id).on('click', function () {
-            console.log('menuButton:', id, "clicked")
             if (cb) cb()
         })
     }

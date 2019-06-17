@@ -4,6 +4,7 @@
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
           integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Mono&display=swap" rel="stylesheet">
 
     <style>
         nav {
@@ -64,6 +65,23 @@
 
         }
 
+        .nav-hotkey {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .nav-hotkey-item {
+            display: inline-block;
+            text-align: right;
+            align-self: center;
+            float: right;
+            pointer-events: none;
+            user-select: none;
+            font-family: 'Roboto Mono', monospace;
+            font-size: .6em;
+        }
+
+
     </style>
 </head>
 
@@ -81,44 +99,49 @@
             <!--<li class="nav-item active">-->
             <!--<a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>-->
             <!--</li>-->
-            <li class="nav-item dropdown">
+            <div class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     File
                 </a>
-                <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-                    <li><a id="nav-open-file" class="dropdown-item" href="#">
-                        Open
-                    </a></li>
-                    <li><a class="dropdown-item" href="#">
+                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                    <a id="nav-open-file" class="nav-hotkey dropdown-item" href="#">
+                        <span>Open</span>
+                        <small class="nav-hotkey-item text-muted">Alt-O</small>
+                    </a>
+                    <a class="dropdown-item" href="#">
                         Export
-                    </a></li>
-                </ul>
-            </li>
+                    </a>
+                </div>
+            </div>
             <div class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     View
                 </a>
                 <div class="dropdown-menu" style="min-width:15em;">
-                    <a id="nav-reset-camera" class="dropdown-item" href="#">
-                        Reset camera
+                    <a id="nav-reset-camera" class="nav-hotkey dropdown-item" href="#">
+                        <span>Reset camera</span>
+                        <small class="nav-hotkey-item text-muted">Alt-C</small>
                     </a>
                     <form class="mb-0 dropdown-item">
-                        <div class="custom-control custom-checkbox">
+                        <div class="custom-control custom-checkbox nav-hotkey">
                             <input type="checkbox" class="custom-control-input" id="nav-view-wireframe">
                             <label class="custom-control-label" for="nav-view-wireframe">Wireframe</label>
+                            <small class="nav-hotkey-item text-muted">Alt-W</small>
                         </div>
                     </form>
                     <form class="mb-0 dropdown-item">
-                        <div class="custom-control custom-checkbox">
+                        <div class="custom-control custom-checkbox nav-hotkey">
                             <input type="checkbox" checked class="custom-control-input" id="nav-view-axes">
                             <label class="custom-control-label" for="nav-view-axes">Axes</label>
+                            <small class="nav-hotkey-item text-muted">Alt-A</small>
                         </div>
                     </form>
 
                     <form class="mb-0 dropdown-item">
-                        <div class="custom-control custom-checkbox">
+                        <div class="custom-control custom-checkbox nav-hotkey">
                             <input type="checkbox" checked class="custom-control-input" id="nav-view-object">
                             <label class="custom-control-label" for="nav-view-object">Object</label>
+                            <small class="nav-hotkey-item text-muted">Alt-V</small>
                         </div>
                     </form>
 
@@ -126,21 +149,26 @@
 
                     <h6 class="dropdown-header">Current Layer</h6>
                     <form class="mb-0 dropdown-item">
-                        <div class="custom-control custom-checkbox">
+
+                        <div class="custom-control custom-checkbox nav-hotkey">
                             <input checked type="checkbox" class="custom-control-input" id="nav-view-perimeters">
                             <label class="custom-control-label" for="nav-view-perimeters">Perimeters</label>
+                            <small class="nav-hotkey-item text-muted">Alt-P</small>
                         </div>
                     </form>
+
                     <form class="mb-0 dropdown-item">
-                        <div class="custom-control custom-checkbox">
+                        <div class="custom-control custom-checkbox nav-hotkey">
                             <input checked type="checkbox" class="custom-control-input" id="nav-view-infill">
                             <label class="custom-control-label" for="nav-view-infill">Infill</label>
+                            <small class="nav-hotkey-item text-muted">Alt-I</small>
                         </div>
                     </form>
                     <form class="mb-0 dropdown-item">
-                        <div class="custom-control custom-checkbox">
+                        <div class="custom-control custom-checkbox nav-hotkey">
                             <input checked type="checkbox" class="custom-control-input" id="nav-view-solid">
                             <label class="custom-control-label" for="nav-view-solid">Solid</label>
+                            <small class="nav-hotkey-item text-muted">Alt-S</small>
                         </div>
                     </form>
                 </div>

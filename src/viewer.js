@@ -279,6 +279,7 @@ const Viewer = class {
             material.vertexColors = THREE.VertexColors
         }
 
+        if (!segs || !segs.length) return
         console.log('drawing', segs.length, 'lines')
         for (let segment of segs) {
             let c = new THREE.Color(Math.random(), Math.random(), Math.random())
