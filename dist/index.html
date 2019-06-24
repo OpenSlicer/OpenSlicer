@@ -255,51 +255,51 @@
                 </a>
                 <div class="dropdown-menu" style="min-width:25em" aria-labelledby="navbarDropdownMenuLink">
                     <h6 class="dropdown-header">Current print</h6>
-                    <form class="py-1 mb-0 dropdown-item">
+                    <form class="py-1 mb-0 dropdown-item form-no-reload">
                         <div class="form-group row mb-0">
                             <span class="col-6 my-auto">Layer height</span>
-                            <input type="number" class="col-6 form-control form-control-sm" value="0.2">
+                            <input id="settings-layer-height" type="number" class="col-6 form-control form-control-sm" value="0.2" min="0" max="3" step="0.01">
                         </div>
                     </form>
 
-                    <form class="py-1 mb-0 dropdown-item">
+                    <form class="py-1 mb-0 dropdown-item form-no-reload">
                         <div class="form-group row mb-0">
                             <span class="col-6 my-auto">Nozzle Temp</span>
-                            <input type="number" class="col-6 form-control form-control-sm" value="220">
+                            <input id="settings-nozzle-temp" type="number" class="col-6 form-control form-control-sm" value="220" min="0" max="300" step="1">
                         </div>
                     </form>
-                    <form class="py-1 mb-0 dropdown-item">
+                    <form class="py-1 mb-0 dropdown-item form-no-reload">
                         <div class="form-group row mb-0">
                             <span class="col-6 my-auto">Bed Temp</span>
-                            <input type="number" class="col-6 form-control form-control-sm" value="75">
+                            <input id="settings-bed-temp" type="number" class="col-6 form-control form-control-sm" value="75">
                         </div>
                     </form>
 
-                    <form class="py-1 mb-0 dropdown-item">
+                    <form class="py-1 mb-0 dropdown-item form-no-reload">
                         <div class="form-group row mb-0">
-                            <span class="col-6 my-auto">Speed</span>
-                            <input type="number" class="col-6 form-control form-control-sm" value="200">
+                            <span class="col-6 my-auto">Speed (mm/s)</span>
+                            <input id="settings-speed" type="number" class="col-6 form-control form-control-sm" value="40">
                         </div>
                     </form>
-                    <form class="py-1 mb-0 dropdown-item">
+                    <form class="py-1 mb-0 dropdown-item form-no-reload">
                         <div class="form-group row mb-0">
                             <span class="col-6 my-auto">Filament diameter</span>
-                            <input type="number" class="col-6 form-control form-control-sm" value="1.75">
+                            <input id="settings-filament-diameter" type="number" class="col-6 form-control form-control-sm" value="1.75">
                         </div>
                     </form>
-                    <form class="py-1 mb-0 dropdown-item">
+                    <form class="py-1 mb-0 dropdown-item form-no-reload">
                         <div class="form-group row mb-0">
                             <span class="col-6 my-auto">Infill percentage</span>
                             <input id="settings-infill-pct" type="number" class="col-6 form-control form-control-sm" value="10" min="0" max="100">
                         </div>
                     </form>
-                    <form class="py-1 mb-0 dropdown-item">
+                    <form class="py-1 mb-0 dropdown-item form-no-reload">
                         <div class="form-group row mb-0">
                             <span class="col-6 my-auto">Top/Bottom layers</span>
                             <input id="settings-top-bottom-layers" type="number" class="col-6 form-control form-control-sm" value="3" min="0" max="100">
                         </div>
                     </form>
-                    <form class="py-1 mb-0 dropdown-item">
+                    <form class="py-1 mb-0 dropdown-item form-no-reload">
                         <div class="form-group row mb-0">
                             <span class="col-6 my-auto">Number of perimeters</span>
                             <input id="settings-num-perims" type="number" class="col-6 form-control form-control-sm" value="3" min="0" max="100">
@@ -311,7 +311,7 @@
 
                     <h6 class="dropdown-header">Printer setup</h6>
 
-                    <form class="py-1 mb-0 dropdown-item">
+                    <form class="py-1 mb-0 dropdown-item form-no-reload">
                         <div class="form-group row mb-0">
                             <span class="col-6 my-auto">Nozzle diameter</span>
                             <input type="number" class="col-6 form-control form-control-sm" value="0.4">

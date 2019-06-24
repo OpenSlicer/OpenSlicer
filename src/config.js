@@ -23,6 +23,8 @@ class Config {
         this.layerChangeSpeed = 12000
         this.solidSpeed = 1800
 
+        this.lineWidth = 0.4
+
         // debugging/view options
         this.axesHelper = true
         this.wireframe = false
@@ -44,6 +46,9 @@ class Config {
         this.epsilon = this.precision / 100
 
         // settings in the GUI settings panel
+        this.nozzleTemp = 220
+        this.bedTemp = 75
+        this.speed = 40
         this.infillPercentage = 10 // default 10
         this.numPerimeters = 3 // default 10
         this.numTopBottomLayers = 3 // default 10

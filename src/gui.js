@@ -9,7 +9,7 @@ class GUI extends EventEmitter {
         this.config = options.config
         this.emitter = options.emitter
 
-        this.loadBottomButtons()
+        this.loadNavBar()
         this.loadLayerSelect()
         this.loadKeyboardShortcuts()
     }
@@ -39,7 +39,12 @@ class GUI extends EventEmitter {
 
     }
 
-    loadBottomButtons() {
+    loadNavBar() {
+
+        $('.form-no-reload').on('submit', function (e) {
+            e.preventDefault()
+        })
+
         // init checkbox behavior
         $('.custom-control.custom-checkbox').on('click', function (e) {
             if (e.target !== this)
@@ -151,6 +156,39 @@ class GUI extends EventEmitter {
         this.bindMenuText('transform-scale-z', (v) => {
             this.config.scale.z = v
             this.emitter.emit('matrixChange')
+        })
+
+        this.bindMenuText('settings-layer-height', (v) => {
+            this.config.layerHeight = v
+            this.emitter.emit('readyForSlice')
+        })
+        this.bindMenuText('settings-nozzle-temp', (v) => {
+            this.config.nozzleTemp = v
+            this.emitter.emit('readyForSlice')
+        })
+        this.bindMenuText('settings-bed-temp', (v) => {
+            this.config.bedTemp = v
+            this.emitter.emit('readyForSlice')
+        })
+        this.bindMenuText('settings-speed', (v) => {
+            this.config.speed = v
+            this.emitter.emit('readyForSlice')
+        })
+        this.bindMenuText('settings-filament-diameter', (v) => {
+            this.config.filamentDiameter = v
+            this.emitter.emit('readyForSlice')
+        })
+        this.bindMenuText('settings-infill-pct', (v) => {
+            this.config.infillPercentage = v
+            this.emitter.emit('readyForSlice')
+        })
+        this.bindMenuText('settings-top-bottom-layers', (v) => {
+            this.config.numTopBottomLayers = v
+            this.emitter.emit('readyForSlice')
+        })
+        this.bindMenuText('settings-num-perims', (v) => {
+            this.config.numPerimeters = v
+            this.emitter.emit('readyForSlice')
         })
     }
 

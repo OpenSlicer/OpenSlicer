@@ -264,7 +264,7 @@ const Viewer = class {
 
     updateLinesGroupW(obj, segs, color, randomizeColors = false) {
         if (!this.isObjectRendered()) return
-        console.log("Updating lines group", obj)
+        //console.log("Updating lines group", obj)
 
         let geom = new THREE.Geometry()
         if (this.data[obj]) {
@@ -276,7 +276,7 @@ const Viewer = class {
         this.data[obj] = new THREE.Group()
 
 
-        console.log('drawing', segs.length, 'lines')
+        //console.log('drawing', segs.length, 'lines')
         for (let segment of segs) {
             let material = new THREE.MeshBasicMaterial({
                 color: randomizeColors ? new THREE.Color(Math.random(), Math.random(), Math.random()) : color,
@@ -285,7 +285,7 @@ const Viewer = class {
 
             let vec = segment.end.clone(new THREE.Vector3()).sub(segment.start)
 
-            let geometry = new THREE.BoxGeometry(this.config.lineWidth, this.config.layerHeight, len)
+            let geometry = new THREE.BoxGeometry(this.config.nozzleDiameter, this.config.layerHeight, len)
             geometry.translate(0, 0, len / 2)
             geometry.rotateY(Math.atan2(vec.x, vec.z))
             let mesh = new THREE.Mesh(geometry, material)
