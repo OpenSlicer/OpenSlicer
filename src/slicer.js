@@ -239,7 +239,7 @@ class Slicer {
 
         gcode.footer()
         console.log("gcode", gcode.gcode)
-        let name = this.config.filename.split('.').slice(0, -1).join('.')
+        let name = this.config.fileName.split('.').slice(0, -1).join('.')
         gcode.download(name + '.gcode')
         this.gcode = gcode
         return gcode
