@@ -19,7 +19,7 @@ class Slicer {
     prepareGeometry(obj) {
         this.obj = obj
         this.perimeters = []
-        this.solid = []
+        this.infill = []
 
         let startTime = new Date().getTime()
         let geom = new THREE.Geometry().fromBufferGeometry(this.obj)
@@ -132,27 +132,32 @@ class Slicer {
         // check if each point exists an even number of times
         for (let i = 0; i < currentLayerVertices.length - 1; i += 2) {
             if (!currentLayerVertices[i].equals(currentLayerVertices[i + 1])) {
-                console.warn("Intersection is not a closed path", currentLayerVertices, i, i+1)
+                console.warn("Intersection is not a closed path", currentLayerVertices, i, i + 1)
                 break
             }
         }
 
 
         if (notify) this.emitter.emit('layerPerimetersFinished')
-        //this.getLayerLinesFromPerimeters(notify)
+        //this.getInnerPerimetersFromOuterPerimeter()
+        this.getLayerLinesFromPerimeters(notify)
     }
 
     getLayerLinesFromPerimeters(notify = true) {
         if (!this.geom) throw new Error("No geometry prepared")
         if (!this.perimeters[this.layer]) throw new Error("No perimeters prepared")
 
-        this.solid[this.layer] = []
+        this.infill[this.layer] = []
+
+        let d = this.config.nozzleDiameter
+        let pct = this.config.infillPercentage
+        let pitch = d + d * (100 / pct - 1)
+
 
         let axis = this.layer % 2 === 0 ? 'x' : 'z'
         let otherAxis = this.layer % 2 === 0 ? 'z' : 'x'
 
         let floorN = (x, n) => Math.floor(x / n) * n
-        let d = this.config.nozzleDiameter
 
         let min = floorN(this.geom.boundingBox.min[axis] - d * 2, d)
         let max = floorN(this.geom.boundingBox.max[axis] + d * 2, d)
@@ -160,8 +165,10 @@ class Slicer {
         let vs
         let target = new THREE.Vector3()
 
+
+        console.log(pitch, d, "pitch d")
         //console.log("min max", min, max)
-        for (let pos = min; pos < max; pos += d) {
+        for (let pos = min; pos < max; pos += pitch) {
             //console.log("plane pos", pos, axis)
             let plane = new THREE.Plane(new THREE.Vector3(axis === 'x' ? -1 : 0, 0, axis === 'z' ? -1 : 0), pos)
             //plane.constant = pos
@@ -182,7 +189,7 @@ class Slicer {
                 if (vs.length % 2 !== 0) console.warn("odd number of intersections")
                 else {
                     for (let i = 0; i < vs.length; i += 2) {
-                        this.solid[this.layer].push(new THREE.Line3(vs[i], vs[i + 1]))
+                        this.infill[this.layer].push(new THREE.Line3(vs[i], vs[i + 1]))
                     }
                 }
                 //console.log(vs)
@@ -217,7 +224,7 @@ class Slicer {
 
             // SOLID INFILL
             j = 0
-            for (let line of this.solid[i]) {
+            for (let line of this.infill[i]) {
                 if (j % 2 === 0) {
                     gcode.travelTo({x: line.start.x + offset, y: line.start.z + offset})
                     gcode.extrudeTo({x: line.end.x + offset, y: line.end.z + offset, s: this.config.solidSpeed})

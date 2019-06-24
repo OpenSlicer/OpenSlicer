@@ -251,17 +251,18 @@ const Viewer = class {
         this.axesHelper.visible = !!this.config.axesHelper
 
 
-        if (this.data.solid) this.data.solid.visible = !!this.config.viewSolid
+        if (this.data.infill) this.data.infill.visible = !!this.config.viewSolid
         if (this.data.perimeters) this.data.perimeters.visible = !!this.config.viewPerimeters
     }
 
     showLayer(n) {
-        this.updateLinesGroup('perimeters', this.slicer.perimeters[n], 0xff0000)
-        this.updateLinesGroup('solid', this.slicer.solid[n], 0xffff00)
+        //this.updateLinesGroup('perimetersOld', this.slicer.perimeters[n], 0xff0000)
+        this.updateLinesGroupW('perimeters', this.slicer.perimeters[n], 0xff0000)
+        this.updateLinesGroupW('solid', this.slicer.infill[n], 0xffff00)
         this.updateVisibilityConfig()
     }
 
-    updateLinesGroup(obj, segs, color, randomizeColors = false) {
+    updateLinesGroupW(obj, segs, color, randomizeColors = false) {
         if (!this.isObjectRendered()) return
         console.log("Updating lines group", obj)
 
@@ -271,28 +272,63 @@ const Viewer = class {
             //geom.colors = this.data[obj].geometry.colors
             //geom.vertices = this.data[obj].geometry.vertices
         }
-
-        let material = new THREE.LineBasicMaterial({
-            color: randomizeColors ? 0xfffffff : color,
-        })
-        if (randomizeColors) {
-            material.vertexColors = THREE.VertexColors
-        }
-
         if (!segs || !segs.length) return
+        this.data[obj] = new THREE.Group()
+
+
         console.log('drawing', segs.length, 'lines')
         for (let segment of segs) {
-            let c = new THREE.Color(Math.random(), Math.random(), Math.random())
-            geom.colors.push(c)
-            geom.colors.push(c)
-            geom.vertices.push(segment.start)
-            geom.vertices.push(segment.end)
+            let material = new THREE.MeshBasicMaterial({
+                color: randomizeColors ? new THREE.Color(Math.random(), Math.random(), Math.random()) : color,
+            })
+            let len = segment.start.distanceTo(segment.end)
+
+            let vec = segment.end.clone(new THREE.Vector3()).sub(segment.start)
+
+            let geometry = new THREE.BoxGeometry(this.config.lineWidth, this.config.layerHeight, len)
+            geometry.translate(0, 0, len / 2)
+            geometry.rotateY(Math.atan2(vec.x, vec.z))
+            let mesh = new THREE.Mesh(geometry, material)
+            geometry.translate(segment.start.x, segment.start.y, segment.start.z)
+            this.data[obj].add(mesh)
         }
 
-
-        this.data[obj] = new THREE.LineSegments(geom, material)
         this.data.group.add(this.data[obj])
     }
+
+    // updateLinesGroupOld(obj, segs, color, randomizeColors = false) {
+    //     if (!this.isObjectRendered()) return
+    //     console.log("Updating lines group", obj)
+    //
+    //     let geom = new THREE.Geometry()
+    //     if (this.data[obj]) {
+    //         this.data.group.remove(this.data[obj])
+    //         //geom.colors = this.data[obj].geometry.colors
+    //         //geom.vertices = this.data[obj].geometry.vertices
+    //     }
+    //
+    //     let material = new THREE.LineBasicMaterial({
+    //         color: randomizeColors ? 0xfffffff : color,
+    //     })
+    //     if (randomizeColors) {
+    //         material.vertexColors = THREE.VertexColors
+    //     }
+    //
+    //     if (!segs || !segs.length) return
+    //     console.log('drawing', segs.length, 'lines')
+    //     for (let segment of segs) {
+    //         let c = new THREE.Color(Math.random(), Math.random(), Math.random())
+    //         geom.colors.push(c)
+    //         geom.colors.push(c)
+    //         geom.vertices.push(segment.start)
+    //         geom.vertices.push(segment.end)
+    //     }
+    //
+    //
+    //     this.data[obj] = new THREE.LineSegments(geom, material)
+    //     this.data.group.add(this.data[obj])
+    // }
+
 
 }
 

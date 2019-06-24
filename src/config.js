@@ -43,6 +43,11 @@ class Config {
         this.precision = Number('1e-' + this.precisionDecimals)
         this.epsilon = this.precision / 100
 
+        // settings in the GUI settings panel
+        this.infillPercentage = 10 // default 10
+        this.numPerimeters = 3 // default 10
+        this.numTopBottomLayers = 3 // default 10
+
 
 
         // internal use constants

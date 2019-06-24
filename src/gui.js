@@ -72,6 +72,7 @@ class GUI extends EventEmitter {
             let lsc = $('#layer-select-container')
             lsc.hide()
             $('#nav-btn-gcode').parent().hide()
+
             $('#nav-btn-slice').parent().show(500)
         })
 
