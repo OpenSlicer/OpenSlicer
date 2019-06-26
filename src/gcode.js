@@ -35,10 +35,10 @@ M205 S0 T0 ; sets the minimum extruding and travel feed rate, mm/sec
 M107
 ; M115 U3.7.1 ; tell printer latest fw version
 M83  ; extruder relative mode
-M104 S${this.config.extruderTemp} ; set extruder temp
+M104 S${this.config.nozzleTemp} ; set extruder temp
 M140 S${this.config.bedTemp} ; set bed temp
 M190 S${this.config.bedTemp} ; wait for bed temp
-M109 S${this.config.extruderTemp} ; wait for extruder temp
+M109 S${this.config.nozzleTemp} ; wait for extruder temp
 G28 W ; home all without mesh bed level
 G80 ; mesh bed leveling
 G1 Y-3.0 F1000.0 ; go outside print area
@@ -115,6 +115,7 @@ G1 X${x} Y${y}
      * e: amount in mm of filament to extrude
      */
     extrudeTo(o = {}) {
+        // We calculate the area of the line we want to fill:
         o.x = o.x.toFixed(3)
         o.y = o.y.toFixed(3)
         let dst = Math.sqrt(o.x * o.x + o.y * o.y)
@@ -122,8 +123,10 @@ G1 X${x} Y${y}
         let filArea = Math.PI * Math.pow(this.config.filamentDiameter / 2, 2)
         let e = (lineVol / filArea).toFixed(3)
 
+
+        // note that we are multiplying the feed rate by 60 to obtain mm/min from mm/s
         this.gcode += `
-G1 F${o.s}
+G1 F${o.s * 60}
 G1 X${o.x} Y${o.y} E${e}
 `
         return this
@@ -136,7 +139,7 @@ G1 X${o.x} Y${o.y} E${e}
      */
     extrude(o = {}) {
         this.gcode += `
-G1 E${e} F${this.config.layerChangeSpeed}
+G1 E${e} F${this.config.retractionSpeed} // TODO
 `
         return this
     }

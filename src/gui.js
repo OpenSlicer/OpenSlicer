@@ -190,6 +190,11 @@ class GUI extends EventEmitter {
             this.config.numPerimeters = v
             this.emitter.emit('readyForSlice')
         })
+        this.bindMenuText('settings-nozzle-diameter', (v) => {
+            this.config.nozzleDiameter = v
+            this.emitter.emit('readyForSlice')
+        })
+
     }
 
     bindMenuText(id, cb) {

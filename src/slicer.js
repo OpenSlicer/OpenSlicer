@@ -20,6 +20,7 @@ class Slicer {
         this.obj = obj
         this.perimeters = []
         this.infill = []
+        this.polygons = []
 
         let startTime = new Date().getTime()
         let geom = new THREE.Geometry().fromBufferGeometry(this.obj)
@@ -60,6 +61,8 @@ class Slicer {
 
         for (let i = 0; i < this.config.numLayers; i++) {
             this.sliceLayer(i, false)
+            this.getInnerPerimetersFromOuterPerimeter()
+            this.getLayerLinesFromPerimeters(false)
         }
         console.log("Total slicing time:", new Date().getTime() - startTime, "ms")
 
@@ -130,17 +133,46 @@ class Slicer {
             return u.z - v.z
         })
         // check if each point exists an even number of times
-        for (let i = 0; i < currentLayerVertices.length - 1; i += 2) {
-            if (!currentLayerVertices[i].equals(currentLayerVertices[i + 1])) {
-                console.warn("Intersection is not a closed path", currentLayerVertices, i, i + 1)
-                break
-            }
-        }
+        // for (let i = 0; i < currentLayerVertices.length - 1; i += 2) {
+        //     if (!currentLayerVertices[i].equals(currentLayerVertices[i + 1])) {
+        //         console.warn("Intersection is not a closed path", currentLayerVertices, i, i + 1)
+        //         break
+        //     }
+        // }
 
+        let lineFind = (v) => {
+            let res = this.perimeters[this.layer]
+                .filter((line) => line.start.equals(v)
+                || line.end.equals(v))
+            return res.length ? res[0] : undefined
+        }
+        let lineOther = (l, v) => (l.start.equals(v) ? l.end : l.start)
+
+
+        // we need to build a polygon from the segments
+        // we will take the quadratic approach here because we need to check by distance, not sorting order
+        this.polygons[this.layer] = []
+        let thresh = 1e-7
+
+        let lines = []
+        let poly = []
+        // while (currentLayerVertices.length > 0) {
+        //     if (poly.length === 0) {
+        //         poly = [currentLayerVertices.pop()]
+        //     }
+        //     let line = lineFind(poly[0])
+        //
+        //
+        // }
 
         if (notify) this.emitter.emit('layerPerimetersFinished')
-        //this.getInnerPerimetersFromOuterPerimeter()
-        this.getLayerLinesFromPerimeters(notify)
+
+    }
+
+    getInnerPerimetersFromOuterPerimeter() {
+        if (!this.geom) throw new Error("No geometry prepared")
+        if (!this.perimeters[this.layer]) throw new Error("No perimeters prepared")
+
     }
 
     getLayerLinesFromPerimeters(notify = true) {
@@ -152,6 +184,9 @@ class Slicer {
         let d = this.config.nozzleDiameter
         let pct = this.config.infillPercentage
         let pitch = d + d * (100 / pct - 1)
+        if (this.layer < 3 || this.config.numLayers - this.layer < 3) {
+            pitch = d
+        }
 
 
         let axis = this.layer % 2 === 0 ? 'x' : 'z'
@@ -211,26 +246,27 @@ class Slicer {
 
             // PERIMETERS
             let j = 0
-            // for (let line of this.perimeters[i]) {
-            //     if (j%2===0) {
-            //         gcode.travelTo({x: line.start.x + offset, y: line.start.z + offset})
-            //         gcode.extrudeTo({x: line.end.x + offset, y: line.end.z + offset})
-            //     } else {
-            //         gcode.travelTo({x: line.end.x + offset, y: line.end.z + offset})
-            //         gcode.extrudeTo({x: line.start.x + offset, y: line.start.z + offset})
-            //     }
-            //     j++
-            // }
+            for (let line of this.perimeters[i]) {
+                if (j % 2 === 0) {
+                    gcode.travelTo({x: line.start.x + offset, y: line.start.z + offset})
+                    gcode.extrudeTo({x: line.end.x + offset, y: line.end.z + offset, s: this.config.perimeterSpeed})
+                } else {
+                    gcode.travelTo({x: line.end.x + offset, y: line.end.z + offset})
+                    gcode.extrudeTo({x: line.start.x + offset, y: line.start.z + offset, s: this.config.perimeterSpeed})
+                }
+                j++
+            }
+            j
 
             // SOLID INFILL
             j = 0
             for (let line of this.infill[i]) {
                 if (j % 2 === 0) {
                     gcode.travelTo({x: line.start.x + offset, y: line.start.z + offset})
-                    gcode.extrudeTo({x: line.end.x + offset, y: line.end.z + offset, s: this.config.solidSpeed})
+                    gcode.extrudeTo({x: line.end.x + offset, y: line.end.z + offset, s: this.config.infillSpeed})
                 } else {
                     gcode.travelTo({x: line.end.x + offset, y: line.end.z + offset})
-                    gcode.extrudeTo({x: line.start.x + offset, y: line.start.z + offset, s: this.config.solidSpeed})
+                    gcode.extrudeTo({x: line.start.x + offset, y: line.start.z + offset, s: this.config.infillSpeed})
                 }
                 j++
             }

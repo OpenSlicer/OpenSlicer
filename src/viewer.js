@@ -56,9 +56,13 @@ const Viewer = class {
         this.scene.add(new THREE.AmbientLight(0x000000))
 
         // add some lights
+        // this.addPointLight(50, 200, -100)
+        // this.addPointLight(-0, 200, 200)
+        // this.addPointLight(-100, -200, -100)
+
         this.addPointLight(50, 200, -100)
         this.addPointLight(-0, 200, 200)
-        this.addPointLight(-100, -200, -100)
+        this.addPointLight(200, 300, 250)
 
         this.renderer.setSize(window.innerWidth, window.innerHeight)
         document.body.appendChild(this.renderer.domElement)
@@ -79,7 +83,7 @@ const Viewer = class {
     }
 
     testAddFloor() {
-        const size = 300
+        const size = this.config.bedSize
         const grid = new THREE.GridHelper(size, 80, 0xffffff, 0xffffff)
         grid.position.y -= 0.1
         grid.position.x += size / 2
@@ -93,9 +97,9 @@ const Viewer = class {
         pointLight.position.set(x, y, z)
         this.scene.add(pointLight)
 
-        // let sphereSize = 10
-        // let pointLightHelper = new THREE.PointLightHelper(pointLight, sphereSize, 0xff0000)
-        // this.scene.add(pointLightHelper)
+        let sphereSize = 10
+        let pointLightHelper = new THREE.PointLightHelper(pointLight, sphereSize, 0xff0000)
+        this.scene.add(pointLightHelper)
     }
 
     resetCamera(length, center) {
@@ -105,11 +109,11 @@ const Viewer = class {
             length = this.data.geom.boundingSphere.radius * 5
             center = this.data.geom.boundingSphere.center
         }
-        let pos = new THREE.Vector3(1, 1, 1).setLength(length || 30)
+        let pos = new THREE.Vector3(1, 0.3, 1).setLength(400)
         this.controls.object.position.set(pos.x, pos.y, pos.z)
         this.controls.update()
         if (center === undefined) {
-            this.controls.target.set(0, 0, 0)
+            this.controls.target.set(this.config.bedSize / 2, 0, this.config.bedSize / 2)
         } else {
             this.controls.target.copy(center)
         }
@@ -159,13 +163,16 @@ const Viewer = class {
         console.log("RenderObject time A", new Date().getTime() - startTime, "ms")
 
 
-        let bboxToCenter = function (o) {
+        let bboxToCenter = (o) => {
             o.computeBoundingBox()
             let minX = o.boundingBox.min.x
             let minY = o.boundingBox.min.y
             let minZ = o.boundingBox.min.z
             let m = new THREE.Matrix4()
             m = m.premultiply(new THREE.Matrix4().makeTranslation(-minX, -minY, -minZ))
+            m = m.premultiply(new THREE.Matrix4().makeTranslation(this.config.bedSize / 2, 0, this.config.bedSize / 2))
+            let half = o.boundingBox.max.clone().sub(o.boundingBox.min)
+            m = m.premultiply(new THREE.Matrix4().makeTranslation(-half.x / 2, 0, -half.z / 2))
             return m
         }
         console.log("RenderObject time B", new Date().getTime() - startTime, "ms")
