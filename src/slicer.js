@@ -74,7 +74,7 @@ class Slicer {
         this.layer = layer
         if (!this.geom) throw new Error("No geometry prepared")
         let h = this.layer * this.config.layerHeight + this.config.epsilon
-        console.log(h)
+        //console.log(h)
 
         //this.geom.computeBoundingBox()
         //let maxY = this.geom.boundingBox.max.y
@@ -132,38 +132,7 @@ class Slicer {
             if (u.y !== v.y) return u.y - v.y
             return u.z - v.z
         })
-        // check if each point exists an even number of times
-        // for (let i = 0; i < currentLayerVertices.length - 1; i += 2) {
-        //     if (!currentLayerVertices[i].equals(currentLayerVertices[i + 1])) {
-        //         console.warn("Intersection is not a closed path", currentLayerVertices, i, i + 1)
-        //         break
-        //     }
-        // }
 
-        let lineFind = (v) => {
-            let res = this.perimeters[this.layer]
-                .filter((line) => line.start.equals(v)
-                || line.end.equals(v))
-            return res.length ? res[0] : undefined
-        }
-        let lineOther = (l, v) => (l.start.equals(v) ? l.end : l.start)
-
-
-        // we need to build a polygon from the segments
-        // we will take the quadratic approach here because we need to check by distance, not sorting order
-        this.polygons[this.layer] = []
-        let thresh = 1e-7
-
-        let lines = []
-        let poly = []
-        // while (currentLayerVertices.length > 0) {
-        //     if (poly.length === 0) {
-        //         poly = [currentLayerVertices.pop()]
-        //     }
-        //     let line = lineFind(poly[0])
-        //
-        //
-        // }
 
         if (notify) this.emitter.emit('layerPerimetersFinished')
 
@@ -201,7 +170,7 @@ class Slicer {
         let target = new THREE.Vector3()
 
 
-        console.log(pitch, d, "pitch d")
+       // console.log(pitch, d, "pitch d")
         //console.log("min max", min, max)
         for (let pos = min; pos < max; pos += pitch) {
             //console.log("plane pos", pos, axis)
@@ -274,7 +243,7 @@ class Slicer {
 
 
         gcode.footer()
-        console.log("gcode", gcode.gcode)
+        //console.log("gcode", gcode.gcode)
         let name = this.config.fileName.split('.').slice(0, -1).join('.')
         gcode.download(name + '.gcode')
         this.gcode = gcode

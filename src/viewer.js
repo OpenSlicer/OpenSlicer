@@ -55,11 +55,6 @@ const Viewer = class {
 
         this.scene.add(new THREE.AmbientLight(0x000000))
 
-        // add some lights
-        // this.addPointLight(50, 200, -100)
-        // this.addPointLight(-0, 200, 200)
-        // this.addPointLight(-100, -200, -100)
-
         this.addPointLight(50, 200, -100)
         this.addPointLight(-0, 200, 200)
         this.addPointLight(200, 300, 250)
